@@ -1,0 +1,106 @@
+"use client";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Certificate } from "@/lib/stores/certificate-store";
+import { DateExpiresBadge } from "@/components/date-expires-badge";
+import { formatDate } from "@/lib/utils/date";
+import { Eye, Trash2 } from "lucide-react";
+import Link from "next/link";
+
+interface CertificateTableProps {
+  certificates: Certificate[];
+  onView?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}
+
+export function CertificateTable({
+  certificates,
+  onView,
+  onDelete,
+}: CertificateTableProps) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          <TableHead>Tipo</TableHead>
+          <TableHead>CNPJ/CPF</TableHead>
+          <TableHead>Validade</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {certificates.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center text-muted-foreground">
+              Nenhum certificado cadastrado
+            </TableCell>
+          </TableRow>
+        ) : (
+          certificates.map((certificate) => (
+            <TableRow key={certificate.id}>
+              <TableCell className="font-medium">
+                {certificate.name}
+              </TableCell>
+              <TableCell>
+                {certificate.type === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+              </TableCell>
+              <TableCell>{certificate.cpfCnpj}</TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="text-sm">
+                    {formatDate(certificate.validFrom)} - {formatDate(certificate.validTo)}
+                  </div>
+                  <DateExpiresBadge validTo={certificate.validTo} />
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={certificate.status === "active" ? "default" : "secondary"}
+                >
+                  {certificate.status === "active" ? "Ativo" : "Inativo"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-2">
+                  {onView && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      asChild
+                    >
+                      <Link href={`/certificados/${certificate.id}`}>
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(certificate.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
