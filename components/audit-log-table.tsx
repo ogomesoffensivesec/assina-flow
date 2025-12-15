@@ -41,18 +41,19 @@ const actionLabels: Record<AuditLog["action"], string> = {
 
 export function AuditLogTable({ logs }: AuditLogTableProps) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Data/Hora</TableHead>
-          <TableHead>Usuário</TableHead>
-          <TableHead>Ação</TableHead>
-          <TableHead>IP</TableHead>
-          <TableHead>Documento</TableHead>
-          <TableHead>Detalhes</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-[160px]">Data/Hora</TableHead>
+            <TableHead className="min-w-[150px]">Usuário</TableHead>
+            <TableHead className="min-w-[140px]">Ação</TableHead>
+            <TableHead className="min-w-[120px]">IP</TableHead>
+            <TableHead className="min-w-[180px]">Documento</TableHead>
+            <TableHead className="min-w-[200px]">Detalhes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
         {logs.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center text-muted-foreground">
@@ -64,25 +65,33 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
             const Icon = actionIcons[log.action];
             return (
               <TableRow key={log.id}>
-                <TableCell>{formatDateTime(log.timestamp)}</TableCell>
-                <TableCell>{log.userName}</TableCell>
+                <TableCell className="whitespace-nowrap">{formatDateTime(log.timestamp)}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-                    <Badge variant="outline">{actionLabels[log.action]}</Badge>
+                  <div className="max-w-[150px] truncate" title={log.userName}>
+                    {log.userName}
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{log.ip}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+                    <Badge variant="outline" className="whitespace-nowrap">{actionLabels[log.action]}</Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="font-mono text-xs whitespace-nowrap">{log.ip}</TableCell>
                 <TableCell>
                   {log.documentName ? (
-                    <span className="text-sm">{log.documentName}</span>
+                    <div className="max-w-[180px] truncate" title={log.documentName}>
+                      <span className="text-sm">{log.documentName}</span>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell>
                   {log.details ? (
-                    <span className="text-sm text-muted-foreground">{log.details}</span>
+                    <div className="max-w-[200px] truncate" title={log.details}>
+                      <span className="text-sm text-muted-foreground">{log.details}</span>
+                    </div>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
@@ -91,8 +100,9 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
             );
           })
         )}
-      </TableBody>
-    </Table>
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@/lib/hooks/use-user";
+import { useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,12 +17,30 @@ import { useRouter } from "next/navigation";
 
 export function AppHeader() {
   const { user } = useUser();
+  const { signOut } = useClerk();
   const router = useRouter();
 
   const handleSignOut = async () => {
-    await fetch("/api/auth/sign-out", { method: "POST" });
-    router.push("/sign-in");
-    router.refresh();
+    try {
+      console.log("[LOGOUT] Iniciando logout");
+      
+      // Fazer logout no Clerk
+      await signOut();
+      console.log("[LOGOUT] Logout concluído no Clerk");
+      
+      // Aguardar um pouco para garantir que o logout foi processado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const loginUrl = "/auth/login";
+      console.log("[LOGOUT] Redirecionando para:", loginUrl);
+      
+      // Usar window.location para garantir redirecionamento completo
+      window.location.href = loginUrl;
+    } catch (error) {
+      console.error("[LOGOUT] Erro ao fazer logout:", error);
+      // Mesmo com erro, tentar redirecionar
+      window.location.href = "/auth/login";
+    }
   };
 
   const initials = user

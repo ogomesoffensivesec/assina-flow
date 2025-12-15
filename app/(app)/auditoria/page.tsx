@@ -30,7 +30,41 @@ export default function AuditPage() {
   });
 
   const handleExportCSV = () => {
-    // Mock: Simular exportação CSV
+    if (filteredLogs.length === 0) {
+      toast.error("Não há logs para exportar");
+      return;
+    }
+
+    // Criar cabeçalho CSV
+    const headers = ["Data/Hora", "Usuário", "Ação", "IP", "Documento", "Detalhes"];
+    
+    // Criar linhas CSV
+    const rows = filteredLogs.map((log) => [
+      new Date(log.timestamp).toLocaleString("pt-BR"),
+      log.userName,
+      log.action,
+      log.ip,
+      log.documentName || "-",
+      log.details || "-",
+    ]);
+
+    // Combinar cabeçalho e linhas
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    // Criar blob e fazer download
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
     toast.success("CSV exportado com sucesso!");
   };
 
@@ -48,7 +82,7 @@ export default function AuditPage() {
       />
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4 p-4 bg-muted/50 rounded-lg">
         <div className="flex items-center gap-2">
           <Label htmlFor="action-filter">Ação:</Label>
           <Select

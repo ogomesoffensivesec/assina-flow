@@ -1,45 +1,67 @@
-import { lucia } from "./";
-import { cookies } from "next/headers";
-import { cache } from "react";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
-export const validateRequest = cache(async () => {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
-  if (!sessionId) {
+/**
+ * Valida a requisição e retorna o usuário atual
+ * Substitui a função validateRequest do Lucia
+ */
+export async function validateRequest() {
+  const { userId } = await auth();
+  
+  if (!userId) {
     return {
       user: null,
       session: null,
     };
   }
 
-  const result = await lucia.validateSession(sessionId);
-  try {
-    if (result.session && result.session.fresh) {
-      const sessionCookie = lucia.createSessionCookie(result.session.id);
-      cookies().set(
-        sessionCookie.name,
-        sessionCookie.value,
-        sessionCookie.attributes
-      );
-    }
-    if (!result.session) {
-      const sessionCookie = lucia.createSessionCookie(null);
-      cookies().set(
-        sessionCookie.name,
-        sessionCookie.value,
-        sessionCookie.attributes
-      );
-    }
-  } catch {
-    // Next.js throws error when attempting to set cookies during rendering
+  const user = await currentUser();
+  
+  if (!user) {
+    return {
+      user: null,
+      session: null,
+    };
   }
-  return result;
-});
 
-export async function requireAuth() {
-  const { user, session } = await validateRequest();
-  if (!user || !session) {
-    throw new Error("Unauthorized");
-  }
-  return { user, session };
+  return {
+    user: {
+      id: user.id,
+      email: user.emailAddresses[0]?.emailAddress || "",
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: (user.publicMetadata?.role as string) || "user",
+      emailVerified: user.emailAddresses[0]?.verification?.status === "verified",
+    },
+    session: { id: userId }, // Compatibilidade com código existente
+  };
 }
 
+/**
+ * Requer autenticação e retorna o usuário atual
+ * Lança erro se não autenticado
+ */
+export async function requireAuth() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await currentUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  return {
+    user: {
+      id: user.id,
+      email: user.emailAddresses[0]?.emailAddress || "",
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: (user.publicMetadata?.role as string) || "user",
+      emailVerified: user.emailAddresses[0]?.verification?.status === "verified",
+    },
+    session: { id: userId }, // Compatibilidade com código existente
+  };
+}

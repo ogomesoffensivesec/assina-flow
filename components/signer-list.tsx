@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Signer } from "@/lib/stores/document-store";
 import { formatDateTime } from "@/lib/utils/date";
+import { formatCPF, formatCNPJ } from "@/lib/utils";
 import { Edit, Trash2, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 interface SignerListProps {
@@ -58,6 +59,7 @@ export function SignerList({
           <TableHead className="w-12">Ordem</TableHead>
           <TableHead>Nome</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>{signers[0]?.documentType === "PF" ? "CPF" : "CNPJ"}</TableHead>
           <TableHead>Tipo</TableHead>
           <TableHead>Status</TableHead>
           {showActions && <TableHead className="text-right">Ações</TableHead>}
@@ -67,7 +69,7 @@ export function SignerList({
         {sortedSigners.length === 0 ? (
           <TableRow>
             <TableCell
-              colSpan={showActions ? 6 : 5}
+              colSpan={showActions ? 7 : 6}
               className="text-center text-muted-foreground"
             >
               Nenhum signatário configurado
@@ -82,6 +84,11 @@ export function SignerList({
               <TableCell className="font-medium">{signer.name}</TableCell>
               <TableCell>{signer.email}</TableCell>
               <TableCell>
+                {signer.documentType === "PF" 
+                  ? formatCPF(signer.documentNumber) 
+                  : formatCNPJ(signer.documentNumber)}
+              </TableCell>
+              <TableCell>
                 {signer.signatureType === "digital_a1"
                   ? "Assinatura Digital A1"
                   : "Assinatura Eletrônica"}
@@ -92,7 +99,7 @@ export function SignerList({
                   <span className="text-sm">{getStatusLabel(signer.status)}</span>
                   {signer.signedAt && (
                     <span className="text-xs text-muted-foreground">
-                      ({formatDateTime(signer.signedAt)})
+                      ({formatDateTime(typeof signer.signedAt === "string" ? new Date(signer.signedAt) : signer.signedAt)})
                     </span>
                   )}
                 </div>

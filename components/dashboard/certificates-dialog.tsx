@@ -35,8 +35,8 @@ export function CertificatesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="!max-w-[80vw] w-[80vw] h-[90vh] flex flex-col p-0" style={{ maxWidth: '80vw', width: '80vw' }}>
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
             Detalhes dos Certificados
@@ -46,7 +46,7 @@ export function CertificatesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Resumo */}
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg border border-border bg-card p-4">
@@ -70,17 +70,19 @@ export function CertificatesDialog({
           {/* Tabela de Certificados */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Lista Completa</h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>CNPJ/CPF</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="border rounded-lg overflow-hidden">
+              <div className="max-h-[50vh] overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Nome</TableHead>
+                      <TableHead className="min-w-[120px]">Tipo</TableHead>
+                      <TableHead className="min-w-[150px]">CNPJ/CPF</TableHead>
+                      <TableHead className="min-w-[200px]">Validade</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                 {certificates.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
@@ -113,8 +115,10 @@ export function CertificatesDialog({
                     </TableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </div>
 
           {/* Alertas */}

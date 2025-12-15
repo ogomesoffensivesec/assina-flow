@@ -1,25 +1,22 @@
 "use client";
 
-import { use } from "react";
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PDFViewer } from "@/components/pdf-viewer";
 import { SignerList } from "@/components/signer-list";
 import { AuditLogTable } from "@/components/audit-log-table";
-import { SignDocumentModal } from "@/components/sign-document-modal";
-import { useDocumentStore } from "@/lib/stores/document-store";
-import { useCertificateStore } from "@/lib/stores/certificate-store";
+import { SignerSelectionModal } from "@/components/signer-selection-modal";
+import { useDocumentStore, Document } from "@/lib/stores/document-store";
 import { useAuditStore } from "@/lib/stores/audit-store";
 import { useUser } from "@/lib/hooks/use-user";
 import { DocumentStatusBadge } from "@/components/document-status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatFileSize } from "@/lib/utils/date";
-import { FileSignature, Download, Mail, Settings } from "lucide-react";
+import { FileSignature, Download, Users } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 export default function DocumentDetailPage({
   params,
@@ -28,13 +25,106 @@ export default function DocumentDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { getDocument, updateDocument } = useDocumentStore();
-  const { certificates } = useCertificateStore();
-  const { logs, getLogs } = useAuditStore();
+  const { documents, fetchDocument } = useDocumentStore();
+  const { getLogs } = useAuditStore();
   const { user } = useUser();
-  const [signModalOpen, setSignModalOpen] = useState(false);
+  const [signerModalOpen, setSignerModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [localDocument, setLocalDocument] = useState<Document | null>(null);
 
-  const document = getDocument(resolvedParams.id);
+  // Carregar documento ao montar e quando documents mudar
+  useEffect(() => {
+    const loadDocument = async () => {
+      setIsLoading(true);
+      try {
+        const doc = await fetchDocument(resolvedParams.id);
+        if (doc) {
+          setLocalDocument(doc);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar documento:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDocument();
+  }, [resolvedParams.id, fetchDocument]);
+
+  // Atualizar documento local quando o store mudar
+  useEffect(() => {
+    const doc = documents.find((d) => d.id === resolvedParams.id);
+    if (doc) {
+      setLocalDocument(doc);
+    }
+  }, [documents, resolvedParams.id]);
+
+  const document = localDocument;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+        </div>
+
+        {/* Fluxo de Assinatura Skeleton */}
+        <div className="flex justify-center">
+          <Card className="w-full max-w-2xl">
+            <CardHeader>
+              <Skeleton className="h-6 w-48 mx-auto" />
+              <Skeleton className="h-4 w-64 mx-auto mt-2" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <Skeleton className="h-10 w-48" />
+                <div className="w-full mt-4 pt-4 border-t space-y-2">
+                  <Skeleton className="h-4 w-40 mx-auto" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="max-w-4xl mx-auto">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-64 mt-2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-32" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!document) {
     return (
@@ -51,62 +141,133 @@ export default function DocumentDetailPage({
     documentId: document.id,
   });
 
-  const availableCertificates = certificates.filter((c) => c.status === "active");
+  const signers = document.signers || [];
 
-  const handleSign = () => {
-    if (availableCertificates.length === 0) {
-      toast.error("Nenhum certificado disponível. Cadastre um certificado primeiro.");
-      return;
-    }
-    setSignModalOpen(true);
-  };
-
-  const handleSignComplete = (certificateId: string, reason: string, location: string) => {
-    // Mock: Simular assinatura
-    const signer = document.signers.find((s) => s.status === "pending");
-    if (signer) {
-      updateDocument(document.id, {
-        signers: document.signers.map((s) =>
-          s.id === signer.id
-            ? {
-                ...s,
-                status: "signed" as const,
-                signedAt: new Date(),
-                certificateId,
-              }
-            : s
-        ),
+  const handlePrepareAndSend = async () => {
+    if (!document) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/documentos/${document.id}/preparar-enviar`, {
+        method: "POST",
       });
 
-      // Verificar se todos assinaram
-      const allSigned = document.signers.every(
-        (s) => s.id === signer.id || s.status === "signed"
-      );
-
-      if (allSigned) {
-        updateDocument(document.id, {
-          status: "signed",
-          signedAt: new Date(),
-          signedHash: `signed_${document.hash}`, // Mock
-        });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao preparar e enviar documento");
       }
 
-      toast.success("Documento assinado com sucesso!");
+      const result = await response.json();
+      toast.success(result.message || "Documento preparado e notificação enviada para os signatários");
+      
+      // Recarregar documento para atualizar status
+      await fetchDocument(document.id);
+    } catch (error: any) {
+      console.error("Erro ao preparar e enviar documento:", error);
+      toast.error(error.message || "Erro ao preparar e enviar documento");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDownload = (signed: boolean = false) => {
-    // Mock: Simular download
-    toast.success(
-      signed
-        ? "Download do documento assinado iniciado"
-        : "Download do documento original iniciado"
-    );
+  const handleSignComplete = async (reason: string, location: string) => {
+    try {
+      const updatedDoc = await fetchDocument(document.id);
+      if (updatedDoc) {
+        setLocalDocument(updatedDoc);
+      }
+      toast.success("Documento assinado com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao atualizar documento:", error);
+      toast.error(error.message || "Erro ao atualizar documento");
+    }
   };
 
-  const handleSendEmail = () => {
-    // Mock: Simular envio por email
-    toast.success("Documento enviado por email com sucesso!");
+  const handleSignersComplete = async (signers: any[]) => {
+    console.log("[DEBUG DetailPage] handleSignersComplete chamado:", {
+      documentId: document.id,
+      signersCount: signers.length,
+    });
+
+    try {
+      // Aguardar um pouco antes de buscar para garantir que o banco foi atualizado
+      console.log("[DEBUG DetailPage] Aguardando atualização do banco...");
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      
+      // Buscar documento atualizado
+      console.log("[DEBUG DetailPage] Buscando documento atualizado...");
+      setIsLoading(true);
+      const updatedDoc = await fetchDocument(document.id);
+      
+      console.log("[DEBUG DetailPage] Documento atualizado recebido:", {
+        found: !!updatedDoc,
+        signersCount: updatedDoc?.signers?.length || 0,
+        status: updatedDoc?.status,
+      });
+      
+      if (updatedDoc) {
+        setLocalDocument(updatedDoc);
+        const actualSignersCount = updatedDoc.signers?.length || 0;
+        
+        if (actualSignersCount > 0) {
+          console.log("[DEBUG DetailPage] Signatários confirmados:", actualSignersCount);
+          toast.success(`${actualSignersCount} signatário(s) configurado(s) com sucesso!`);
+        } else {
+          console.warn("[DEBUG DetailPage] Nenhum signatário encontrado após atualização");
+          toast.warning("Signatários podem não ter sido salvos. Recarregue a página.");
+        }
+      } else {
+        console.error("[DEBUG DetailPage] Documento não encontrado após atualização");
+        toast.error("Erro ao atualizar documento");
+      }
+    } catch (error: any) {
+      console.error("[DEBUG DetailPage] Erro ao atualizar documento:", {
+        message: error.message,
+        error,
+      });
+      toast.error(error.message || "Erro ao atualizar documento");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async (signed: boolean = false) => {
+    if (!signed) {
+      toast.error("Download do documento original ainda não implementado");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/documentos/${document.id}/download`);
+      
+      if (!response.ok) {
+        // Tentar ler mensagem de erro do JSON
+        let errorMessage = "Erro ao baixar documento";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Se não conseguir ler JSON, usar mensagem padrão
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = window.document.createElement("a");
+      a.href = url;
+      a.download = `${document.fileName.replace('.pdf', '')}_assinado.pdf`;
+      window.document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      window.document.body.removeChild(a);
+      
+      toast.success("Download do documento assinado iniciado");
+    } catch (error: any) {
+      console.error("Erro ao baixar documento:", error);
+      toast.error(error.message || "Erro ao baixar documento");
+    }
   };
 
   return (
@@ -118,53 +279,96 @@ export default function DocumentDetailPage({
           { label: "Documentos", href: "/documentos" },
           { label: document.name },
         ]}
-        actions={
-          <div className="flex items-center gap-2">
-            {document.status === "pending_config" && (
-              <Button variant="outline" asChild>
-                <Link href={`/documentos/${document.id}/signatarios`}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configurar Signatários
-                </Link>
-              </Button>
-            )}
-            {document.status === "pending_signature" && (
-              <Button onClick={handleSign}>
-                <FileSignature className="mr-2 h-4 w-4" />
-                Assinar com Certificado A1
-              </Button>
-            )}
-            {document.status === "signed" && (
-              <>
-                <Button variant="outline" onClick={() => handleDownload(true)}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Baixar Assinado
-                </Button>
-                <Button variant="outline" onClick={handleSendEmail}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Enviar por Email
-                </Button>
-              </>
-            )}
-            <Button variant="outline" onClick={() => handleDownload(false)}>
-              <Download className="mr-2 h-4 w-4" />
-              Baixar Original
-            </Button>
-          </div>
-        }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Visualizador de PDF */}
-        <div className="lg:col-span-2">
-          <PDFViewer
-            documentUrl={`/api/documents/${document.id}`}
-            documentName={document.name}
-            className="h-[800px]"
-          />
-        </div>
+      {/* Seção Centralizada do Fluxo de Assinatura */}
+      <div className="flex justify-center">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <CardTitle className="text-center">Fluxo de Assinatura</CardTitle>
+            <CardDescription className="text-center">
+              Configure signatários e assine o documento
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center gap-4">
+              {/* Status do Documento */}
+              <div className="flex items-center gap-2">
+                <DocumentStatusBadge status={document.status} />
+                <span className="text-sm text-muted-foreground">
+                  {signers.length} signatário(s) configurado(s)
+                </span>
+              </div>
 
-        {/* Sidebar com Tabs */}
+              {/* Botões de Ação */}
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                {/* Botão para configurar signatários se não houver ou status for pending */}
+                {(document.status === "pending" || signers.length === 0) && (
+                  <Button 
+                    onClick={() => setSignerModalOpen(true)} 
+                    variant="outline"
+                    size="lg"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Configurar Signatários
+                  </Button>
+                )}
+                {/* Botão para preparar e enviar se houver signatários e status for waiting_signers */}
+                {document.status === "waiting_signers" && signers.length > 0 && (
+                  <Button 
+                    onClick={handlePrepareAndSend} 
+                    disabled={isLoading}
+                    size="lg"
+                  >
+                    <FileSignature className="mr-2 h-4 w-4" />
+                    {isLoading ? "Preparando..." : "Preparar e Enviar para Assinatura"}
+                  </Button>
+                )}
+                {/* Botão para baixar se assinado */}
+                {(document.status === "signed" || document.status === "completed") && (
+                  <Button 
+                    onClick={() => handleDownload(true)}
+                    size="lg"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar Assinado
+                  </Button>
+                )}
+              </div>
+
+              {/* Informações Adicionais */}
+              {signers.length > 0 && (
+                <div className="w-full mt-4 pt-4 border-t">
+                  <p className="text-sm font-semibold mb-2 text-center">Signatários Configurados:</p>
+                  <div className="space-y-2">
+                    {signers.map((signer) => {
+                      return (
+                        <div 
+                          key={signer.id} 
+                          className="flex items-center justify-between p-2 rounded-md bg-muted/50 border border-border"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground">#{signer.order}</span>
+                            <span className="text-sm font-medium">{signer.name}</span>
+                          </div>
+                          {signer.identification && (
+                            <span className="text-xs text-muted-foreground">
+                              {signer.identification}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sidebar com Tabs */}
+      <div className="max-w-4xl mx-auto">
         <div className="space-y-4">
           <Tabs defaultValue="summary" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
@@ -187,22 +391,6 @@ export default function DocumentDetailPage({
                     <p className="text-xs text-muted-foreground">Status</p>
                     <div className="mt-1">
                       <DocumentStatusBadge status={document.status} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Certificados Disponíveis</p>
-                    <div className="mt-1 space-y-1">
-                      {availableCertificates.length > 0 ? (
-                        availableCertificates.map((cert) => (
-                          <p key={cert.id} className="text-sm">
-                            {cert.name}
-                          </p>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Nenhum certificado disponível
-                        </p>
-                      )}
                     </div>
                   </div>
                   <div>
@@ -232,7 +420,7 @@ export default function DocumentDetailPage({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SignerList signers={document.signers} showActions={false} />
+                  <SignerList signers={signers} showActions={false} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -265,40 +453,39 @@ export default function DocumentDetailPage({
           <CardContent>
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                {document.signers
+                {signers
                   .filter((s) => s.status === "signed")
                   .map((signer) => {
-                    const cert = certificates.find((c) => c.id === signer.certificateId);
                     return (
                       <div key={signer.id} className="space-y-2">
                         <p className="text-sm font-medium">{signer.name}</p>
-                        {cert && (
-                          <>
-                            <p className="text-xs text-muted-foreground">
-                              Certificado: {cert.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {cert.cpfCnpj} - Válido até {formatDate(cert.validTo)}
-                            </p>
-                          </>
+                        {signer.phoneNumber && (
+                          <p className="text-xs text-muted-foreground">
+                            WhatsApp: {signer.phoneNumber}
+                          </p>
+                        )}
+                        {signer.identification && (
+                          <p className="text-xs text-muted-foreground">
+                            Identificação: {signer.identification}
+                          </p>
                         )}
                         {signer.signedAt && (
                           <p className="text-xs text-muted-foreground">
-                            Assinado em: {formatDate(signer.signedAt)}
+                            Assinado em: {formatDate(new Date(signer.signedAt))}
                           </p>
                         )}
                       </div>
                     );
                   })}
               </div>
-              {/* Mock QR Code */}
+              {/* TODO: Implementar QR Code real com URL de validação */}
               <div className="flex items-center justify-center p-4 border border-border rounded-lg bg-muted/50">
                 <div className="text-center">
                   <div className="w-32 h-32 bg-muted border border-border rounded mx-auto mb-2 flex items-center justify-center">
                     <span className="text-xs text-muted-foreground">QR Code</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    URL de Validação
+                    URL de Validação (em desenvolvimento)
                   </p>
                 </div>
               </div>
@@ -307,14 +494,14 @@ export default function DocumentDetailPage({
         </Card>
       )}
 
-      <SignDocumentModal
-        open={signModalOpen}
-        onOpenChange={setSignModalOpen}
-        document={document}
-        certificates={availableCertificates}
-        onSign={handleSignComplete}
+
+      <SignerSelectionModal
+        open={signerModalOpen}
+        onOpenChange={setSignerModalOpen}
+        documentId={document.id}
+        certificates={[]}
+        onComplete={handleSignersComplete}
       />
     </div>
   );
 }
-

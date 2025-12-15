@@ -32,14 +32,8 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
 
   useEffect(() => {
-    if (!isAdmin) {
-      toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
-      router.push("/dashboard");
-      return;
-    }
-
     fetchUsers();
-  }, [isAdmin, router]);
+  }, [router]);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -103,9 +97,6 @@ export default function UsersPage() {
     router.push(`/usuarios/${user.id}`);
   };
 
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">
@@ -123,7 +114,7 @@ export default function UsersPage() {
       />
 
       {/* Filtros */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -23,14 +23,26 @@ export default function DocumentSignersPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { getDocument, updateDocument, addSigner, removeSigner, updateSigner } =
+  const { getDocument, fetchDocument, updateDocument, addSigner, removeSigner, updateSigner } =
     useDocumentStore();
   const { addLog } = useAuditStore();
   const { user } = useUser();
   const [signerModalOpen, setSignerModalOpen] = useState(false);
   const [editingSigner, setEditingSigner] = useState<Signer | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
 
   const document = getDocument(resolvedParams.id);
+
+  useEffect(() => {
+    const loadDocument = async () => {
+      if (!document) {
+        setIsLoading(true);
+        await fetchDocument(resolvedParams.id);
+      }
+      setIsLoading(false);
+    };
+    loadDocument();
+  }, [resolvedParams.id, document, fetchDocument]);
 
   if (!document) {
     return (
@@ -53,48 +65,72 @@ export default function DocumentSignersPage({
     setSignerModalOpen(true);
   };
 
-  const handleSaveSigner = (data: {
+  const handleSaveSigner = async (data: {
     name: string;
     email: string;
     signatureType: "digital_a1" | "electronic";
+    cpf?: string;
     order: number;
   }) => {
-    if (editingSigner) {
-      updateSigner(document.id, editingSigner.id, data);
-      toast.success("Signatário atualizado com sucesso");
-    } else {
-      addSigner(document.id, {
-        ...data,
-        status: "pending",
-      });
+    // CPF já está sendo passado no data
+    try {
+      if (editingSigner) {
+        await updateSigner(document.id, editingSigner.id, data);
+        
+        // Recarregar documento para obter dados atualizados
+        await fetchDocument(document.id);
+        
+        toast.success("Signatário atualizado com sucesso");
+      } else {
+        await addSigner(document.id, {
+          ...data,
+          status: "pending",
+        });
+        
+        // Recarregar documento para obter dados atualizados
+        await fetchDocument(document.id);
+        
+        addLog({
+          userId: user?.id || "unknown",
+          userName: user?.firstName && user?.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user?.firstName || user?.email || "Unknown",
+          action: "signer_add",
+          ip: "192.168.1.1",
+          documentId: document.id,
+          documentName: document.name,
+        });
+        toast.success("Signatário adicionado com sucesso");
+      }
+      setSignerModalOpen(false);
+    } catch (error: any) {
+      console.error("Erro ao salvar signatário:", error);
+      toast.error(error.message || "Erro ao salvar signatário");
+    }
+  };
+
+  const handleDeleteSigner = async (signerId: string) => {
+    try {
+      await removeSigner(document.id, signerId);
+      
+      // Recarregar documento para obter dados atualizados
+      await fetchDocument(document.id);
+      
       addLog({
         userId: user?.id || "unknown",
         userName: user?.firstName && user?.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user?.firstName || user?.email || "Unknown",
-        action: "signer_add",
+          ? `${user.firstName} ${user.lastName}` 
+          : user?.firstName || user?.email || "Unknown",
+        action: "signer_remove",
         ip: "192.168.1.1",
         documentId: document.id,
         documentName: document.name,
       });
-      toast.success("Signatário adicionado com sucesso");
+      toast.success("Signatário removido com sucesso");
+    } catch (error: any) {
+      console.error("Erro ao remover signatário:", error);
+      toast.error(error.message || "Erro ao remover signatário");
     }
-    setSignerModalOpen(false);
-  };
-
-  const handleDeleteSigner = (signerId: string) => {
-    removeSigner(document.id, signerId);
-    addLog({
-      userId: user?.id || "unknown",
-      userName: user?.firstName && user?.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user?.firstName || user?.email || "Unknown",
-      action: "signer_remove",
-      ip: "192.168.1.1",
-      documentId: document.id,
-      documentName: document.name,
-    });
-    toast.success("Signatário removido com sucesso");
   };
 
   const handleSaveChanges = () => {
@@ -104,21 +140,37 @@ export default function DocumentSignersPage({
     }
 
     updateDocument(document.id, {
-      status: "pending_signature",
+      status: "waiting_signers",
     });
     toast.success("Alterações salvas com sucesso");
   };
 
-  const handleProceedToSign = () => {
+  const handleProceedToSign = async () => {
     if (document.signers.length === 0) {
       toast.error("Adicione pelo menos um signatário");
       return;
     }
 
-    updateDocument(document.id, {
-      status: "pending_signature",
-    });
-    router.push(`/documentos/${document.id}`);
+    try {
+      // Iniciar processo de assinatura
+      const response = await fetch(`/api/documentos/${document.id}/assinar`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao iniciar assinatura");
+      }
+
+      // Recarregar documento
+      await fetchDocument(document.id);
+      
+      toast.success("Processo de assinatura iniciado");
+      router.push(`/documentos/${document.id}`);
+    } catch (error: any) {
+      console.error("Erro ao iniciar assinatura:", error);
+      toast.error(error.message || "Erro ao iniciar assinatura");
+    }
   };
 
   return (

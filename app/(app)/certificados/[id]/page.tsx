@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,9 +14,10 @@ import { useUser } from "@/lib/hooks/use-user";
 import { DateExpiresBadge } from "@/components/date-expires-badge";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { formatDate } from "@/lib/utils/date";
-import { ShieldCheck, Trash2, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Trash2, CheckCircle2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { CertificateDownloadDialog } from "@/components/certificate-download-dialog";
 
 export default function CertificateDetailPage({
   params,
@@ -25,13 +26,26 @@ export default function CertificateDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { getCertificate, removeCertificate } = useCertificateStore();
+  const { getCertificate, fetchCertificate, removeCertificate } = useCertificateStore();
   const { documents } = useDocumentStore();
   const { addLog } = useAuditStore();
   const { user } = useUser();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const certificate = getCertificate(resolvedParams.id);
+
+  useEffect(() => {
+    const loadCertificate = async () => {
+      if (!certificate) {
+        setIsLoading(true);
+        await fetchCertificate(resolvedParams.id);
+      }
+      setIsLoading(false);
+    };
+    loadCertificate();
+  }, [resolvedParams.id, certificate, fetchCertificate]);
 
   if (!certificate) {
     return (
@@ -49,12 +63,13 @@ export default function CertificateDetailPage({
   );
 
   const handleTestValidation = () => {
-    // Mock: Simular teste de validação
+    // TODO: Implementar validação real do certificado
     toast.success("Certificado válido e funcionando corretamente!");
   };
 
-  const handleDelete = () => {
-    removeCertificate(certificate.id);
+  const handleDelete = async () => {
+    try {
+      await removeCertificate(certificate.id);
     addLog({
       userId: user?.id || "unknown",
       userName: user?.firstName && user?.lastName 
@@ -64,8 +79,12 @@ export default function CertificateDetailPage({
       ip: "192.168.1.1",
       details: `Certificado ${certificate.name} excluído`,
     });
-    toast.success("Certificado excluído com sucesso");
-    router.push("/certificados");
+      toast.success("Certificado excluído com sucesso");
+      router.push("/certificados");
+    } catch (error: any) {
+      console.error("Erro ao excluir certificado:", error);
+      toast.error(error.message || "Erro ao excluir certificado");
+    }
   };
 
   return (
@@ -79,6 +98,10 @@ export default function CertificateDetailPage({
         ]}
         actions={
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setDownloadDialogOpen(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Baixar Certificado
+            </Button>
             <Button variant="outline" onClick={handleTestValidation}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Testar Validação
@@ -184,6 +207,13 @@ export default function CertificateDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      <CertificateDownloadDialog
+        open={downloadDialogOpen}
+        onOpenChange={setDownloadDialogOpen}
+        certificateId={certificate.id}
+        certificateName={certificate.name}
+      />
 
       <ConfirmationDialog
         open={deleteDialogOpen}

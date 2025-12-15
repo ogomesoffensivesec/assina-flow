@@ -28,14 +28,8 @@ export default function UserDetailPage({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) {
-      toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
-      router.push("/dashboard");
-      return;
-    }
-
     fetchUser();
-  }, [isAdmin, router, resolvedParams.id]);
+  }, [router, resolvedParams.id]);
 
   const fetchUser = async () => {
     setIsLoading(true);
@@ -121,7 +115,7 @@ export default function UserDetailPage({
     toast.info("Funcionalidade de banir/desbanir em desenvolvimento");
   };
 
-  if (!isAdmin || isLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <PageHeader title="Carregando..." />

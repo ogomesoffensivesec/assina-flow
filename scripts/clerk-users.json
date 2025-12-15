@@ -1,0 +1,168 @@
+[
+  {
+    "id": "user_34c30aKZH2McEIbU1FZBmGYX6v0",
+    "createdAt": "2025-11-03 19:42:16.655",
+    "updatedAt": "2025-11-07 20:14:14.775",
+    "email": "gomes.rootkit@gmail.com",
+    "firstName": "IGOR",
+    "lastName": "GOMES",
+    "role": "org:admin",
+    "clerkUserId": "user_34c30aKZH2McEIbU1FZBmGYX6v0",
+    "passwordHash": "$2b$12$5.3q4zm9o14cScbEXKMYJ.zJYxN.hURnHUcjE5ZnEu.vJqIpmS5Mm"
+  },
+  {
+    "id": "user_34yeTunB3hr3qejByLXbpzgGjUt",
+    "createdAt": "2025-11-03 17:17:30.291",
+    "updatedAt": "2025-11-10 16:18:04.113",
+    "email": "alexandre.pereira@devtechsoftwares.com.br",
+    "firstName": "ALEXANDRE",
+    "lastName": "PEREIRA",
+    "role": "org:member",
+    "clerkUserId": "user_34yeTunB3hr3qejByLXbpzgGjUt",
+    "passwordHash": "$2b$12$48AqHeu6b2oWuV8Gstu/YeYS6QE9C5VhZ5aHgCo9AxQz8FQyGpitK"
+  },
+  {
+    "id": "user_34yesZ1RhS6PHU2wJ07zweRSodm",
+    "createdAt": "2025-11-03 17:20:45.802",
+    "updatedAt": "2025-11-07 20:14:02.375",
+    "email": "maiconferraz@uol.com.br",
+    "firstName": "MAICON",
+    "lastName": "FERRAZ",
+    "role": "org:admin",
+    "clerkUserId": "user_34yesZ1RhS6PHU2wJ07zweRSodm",
+    "passwordHash": "$2b$12$I2MhcQZKPoYjVkUhNfvPguIKnFykpXmJv3XfHeoBvlHvgz4Yzpsb6"
+  },
+  {
+    "id": "user_351Fg5BjhK9Q1XBZG7DJXMXJ3VG",
+    "createdAt": "2025-11-04 15:22:59.109",
+    "updatedAt": "2025-11-07 20:12:27.391",
+    "email": "manoel.junior@grupoindcon.com.br",
+    "firstName": "MANOEL",
+    "lastName": "JUNIOR",
+    "role": "org:admin",
+    "clerkUserId": "user_351Fg5BjhK9Q1XBZG7DJXMXJ3VG",
+    "passwordHash": "$2b$12$pWCVquG0FYai7D9Rc9zHFeQZz1fTvE8h63WOpliP7m0WjN0cwMw76"
+  },
+  {
+    "id": "user_351Sdm4djukVXORTY7RMoEbYPJG",
+    "createdAt": "2025-11-04 17:09:33.66",
+    "updatedAt": "2025-11-07 18:33:11.195",
+    "email": "guilherme.carvalho@grupoindcon.com.br",
+    "firstName": "GUILHERME",
+    "lastName": "CARVALHO",
+    "role": "org:member",
+    "clerkUserId": "user_351Sdm4djukVXORTY7RMoEbYPJG",
+    "passwordHash": "$2b$12$1X/PLZpajuuKK6Xmophs4eTpMAoi0VOlOgwrm7.PcCe/j.38dR0H6"
+  },
+  {
+    "id": "user_351Sy4hqw7Wv7ITOVYfnXP3DnFe",
+    "createdAt": "2025-11-04 17:12:16.066",
+    "updatedAt": "2025-11-04 17:12:16.066",
+    "email": "agatha.leite@grupoindcon.com.br",
+    "firstName": "AGATHA",
+    "lastName": "LEITE",
+    "role": "org:member",
+    "clerkUserId": "user_351Sy4hqw7Wv7ITOVYfnXP3DnFe",
+    "passwordHash": "$2b$12$Tw9rU05d2V4o6SHB3AnAi.y2O8rO5TyGVqbn3IPIINmm0cg1G4vzK"
+  },
+  {
+    "id": "user_359utG5FjwW0rnZQFWr5CL6Lytr",
+    "createdAt": "2025-11-07 17:00:21.973",
+    "updatedAt": "2025-11-07 18:08:01.805",
+    "email": "andreia.busch@bmimports.com.br",
+    "firstName": "ANDREA",
+    "lastName": "BUSCH",
+    "role": "org:member",
+    "clerkUserId": "user_359utG5FjwW0rnZQFWr5CL6Lytr",
+    "passwordHash": "$2b$12$MLMax.cYyKezBemPLZ2AJunmJwkZVUtPO7tI9/z/X0ekYZGfnNm5m"
+  },
+  {
+    "id": "user_35A2whrBbJnUA7a4hjX6qlHH1Mq",
+    "createdAt": "2025-11-07 18:06:35.936",
+    "updatedAt": "2025-11-07 18:07:47.698",
+    "email": "patricia.crescenti@bmimports.com.br",
+    "firstName": "PATRICIA",
+    "lastName": "CRESCENTI",
+    "role": "org:member",
+    "clerkUserId": "user_35A2whrBbJnUA7a4hjX6qlHH1Mq",
+    "passwordHash": "$2b$12$nLGkbjTLmGEFdi7sI5dlweOHLDWwE2cT0ANc6spIZpUtoovAGhbfC"
+  },
+  {
+    "id": "user_35ACNLxghDOCMAVnvmZVfmQZG0A",
+    "createdAt": "2025-11-07 19:24:07.494",
+    "updatedAt": "2025-11-12 12:41:44.048",
+    "email": "gabriela.ritz@make-home.com.br",
+    "firstName": "GABRIELA",
+    "lastName": "RITZ",
+    "role": "org:member",
+    "clerkUserId": "user_35ACNLxghDOCMAVnvmZVfmQZG0A",
+    "passwordHash": "$2b$12$AAIMsJ7pflpclqVVmWFfsu338vE7Iii/ZD9vu2srafYsNmgzM6UqC"
+  },
+  {
+    "id": "user_35AU004mMyY3Ema5I6HlMJxhYzJ",
+    "createdAt": "2025-11-07 21:49:03.677",
+    "updatedAt": "2025-11-10 19:36:59.66",
+    "email": "kayke.froes@grupoindcon.com.br",
+    "firstName": "KAYKE",
+    "lastName": "FROES",
+    "role": "org:member",
+    "clerkUserId": "user_35AU004mMyY3Ema5I6HlMJxhYzJ",
+    "passwordHash": "$2b$12$A3xrqT/42gqApbMFHhl9lO2ZsQGbUf7viRP3bE6w4r2k6s58JgjvG"
+  },
+  {
+    "id": "user_35HvDXMQQ3DC9bdDQQ5t4k9JPkc",
+    "createdAt": "2025-11-10 13:01:33.859",
+    "updatedAt": "2025-11-10 13:01:33.859",
+    "email": "jeferson@grupoindcon.com.br",
+    "firstName": "JEFERSON",
+    "lastName": "GONCALVES",
+    "role": "org:member",
+    "clerkUserId": "user_35HvDXMQQ3DC9bdDQQ5t4k9JPkc",
+    "passwordHash": "$2b$12$JV2tNZ3cvSpemN.EMSEzRulEvNJSIAIncU9NN.in0ShcC/spa01uS"
+  },
+  {
+    "id": "user_35HwUDQ4sXbyhRrcqykakpURsJY",
+    "createdAt": "2025-11-10 13:11:59.148",
+    "updatedAt": "2025-11-10 13:11:59.148",
+    "email": "katiareginarodriguespe@gmail.com",
+    "firstName": "KATIA",
+    "lastName": "REGINA",
+    "role": "org:member",
+    "clerkUserId": "user_35HwUDQ4sXbyhRrcqykakpURsJY",
+    "passwordHash": "$2b$12$wUtA28ED6UaAHMBXTbDcb.Ras/O1RChrWMpbHgZ4oShCBxPjoRSNm"
+  },
+  {
+    "id": "user_35Icz1RsNzjdBYWkmtlosOdNvXM",
+    "createdAt": "2025-11-10 19:01:24.651",
+    "updatedAt": "2025-11-10 19:01:24.651",
+    "email": "douglas.jose@grupoindcon.com.br",
+    "firstName": "DOUGLAS",
+    "lastName": "JOSE",
+    "role": "org:member",
+    "clerkUserId": "user_35Icz1RsNzjdBYWkmtlosOdNvXM",
+    "passwordHash": "$2b$12$YQVG3ScNQ0bpHCiTwVIYqeoE/51eAF.PSf.2J0P5qCVHhN7ujHTAa"
+  },
+  {
+    "id": "user_35IeZyrxxRgaqEUpZuPdVmLrpvg",
+    "createdAt": "2025-11-10 19:14:32.462",
+    "updatedAt": "2025-11-24 20:39:44.675",
+    "email": "priscila.maria@bmimports.com.br",
+    "firstName": "PRISCILA",
+    "lastName": "MKT",
+    "role": "org:member",
+    "clerkUserId": "user_35IeZyrxxRgaqEUpZuPdVmLrpvg",
+    "passwordHash": "$2b$12$jDfnm6D30DZBbQw2LBbF.eUKUYuRsAS8L154Q45xGb7ro/5NWseFa"
+  },
+  {
+    "id": "user_35vRqRVfIxSWdzb683jTBgnt63r",
+    "createdAt": "2025-11-24 20:39:44.629",
+    "updatedAt": "2025-11-24 20:39:44.629",
+    "email": "aninhasantos953@gmail.com",
+    "firstName": "ANNA JULIA",
+    "lastName": "FERREIRA",
+    "role": "org:member",
+    "clerkUserId": "user_35vRqRVfIxSWdzb683jTBgnt63r",
+    "passwordHash": "$2b$12$uTzDDpEUFCWtTXQojIJWIuPGN.ykDT5T5keOvAxwuYbaSOl1d5jfi"
+  }
+]
+

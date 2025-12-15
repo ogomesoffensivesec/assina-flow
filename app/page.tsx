@@ -1,12 +1,12 @@
-import { validateRequest } from "@/lib/auth/utils";
+import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
-  const { user } = await validateRequest();
+  const user = await currentUser();
 
   if (user) {
     redirect("/dashboard");
   } else {
-    redirect("/sign-in");
+    redirect("/auth/login");
   }
 }

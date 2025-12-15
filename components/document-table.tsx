@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Document, DocumentStatus } from "@/lib/stores/document-store";
 import { DocumentStatusBadge } from "@/components/document-status-badge";
 import { formatDate, formatFileSize } from "@/lib/utils/date";
@@ -21,7 +23,9 @@ interface DocumentTableProps {
   onConfigure?: (id: string) => void;
   onSign?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onDeleteMultiple?: (ids: string[]) => void;
   onDownload?: (id: string) => void;
+  showSelection?: boolean;
 }
 
 export function DocumentTable({
@@ -30,8 +34,39 @@ export function DocumentTable({
   onConfigure,
   onSign,
   onDelete,
+  onDeleteMultiple,
   onDownload,
+  showSelection = true,
 }: DocumentTableProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(documents.map((d) => d.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    if (onDeleteMultiple && selectedIds.size > 0) {
+      onDeleteMultiple(Array.from(selectedIds));
+      setSelectedIds(new Set());
+    }
+  };
+
+  const allSelected = documents.length > 0 && selectedIds.size === documents.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < documents.length;
   const getActionButtons = (document: Document) => {
     const buttons = [];
 
@@ -50,7 +85,7 @@ export function DocumentTable({
       );
     }
 
-    if (document.status === "pending_config" && onConfigure) {
+    if ((document.status === "pending" || document.status === "waiting_signers") && onConfigure) {
       buttons.push(
         <Button
           key="configure"
@@ -64,7 +99,7 @@ export function DocumentTable({
       );
     }
 
-    if (document.status === "pending_signature" && onSign) {
+    if (document.status === "signing" && onSign) {
       buttons.push(
         <Button
           key="sign"
@@ -78,7 +113,7 @@ export function DocumentTable({
       );
     }
 
-    if (document.status === "signed" && onDownload) {
+    if ((document.status === "signed" || document.status === "completed") && onDownload) {
       buttons.push(
         <Button
           key="download"
@@ -111,34 +146,77 @@ export function DocumentTable({
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nome do Documento</TableHead>
-          <TableHead>Páginas</TableHead>
-          <TableHead>Signatários</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Data de Upload</TableHead>
-          <TableHead className="text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <div className="space-y-4">
+      {showSelection && onDeleteMultiple && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+          <div className="text-sm font-medium">
+            {selectedIds.size} documento(s) selecionado(s)
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteSelected}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Excluir Selecionados
+          </Button>
+        </div>
+      )}
+      
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {showSelection && onDeleteMultiple && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
+              )}
+              <TableHead className="min-w-[250px]">Nome do Documento</TableHead>
+              <TableHead className="min-w-[80px]">Páginas</TableHead>
+              <TableHead className="min-w-[150px]">Signatários</TableHead>
+              <TableHead className="min-w-[140px]">Status</TableHead>
+              <TableHead className="min-w-[140px]">Data de Upload</TableHead>
+              <TableHead className="text-right min-w-[120px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
         {documents.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground">
+            <TableCell 
+              colSpan={showSelection && onDeleteMultiple ? 7 : 6} 
+              className="text-center text-muted-foreground"
+            >
               Nenhum documento cadastrado
             </TableCell>
           </TableRow>
         ) : (
           documents.map((document) => (
             <TableRow key={document.id}>
-              <TableCell className="font-medium">{document.name}</TableCell>
+              {showSelection && onDeleteMultiple && (
+                <TableCell>
+                  <Checkbox
+                    checked={selectedIds.has(document.id)}
+                    onCheckedChange={(checked) => handleSelectOne(document.id, checked as boolean)}
+                    aria-label={`Selecionar ${document.name}`}
+                  />
+                </TableCell>
+              )}
+              <TableCell className="font-medium">
+                <div className="max-w-[250px] truncate" title={document.name}>
+                  {document.name}
+                </div>
+              </TableCell>
               <TableCell>{document.pageCount}</TableCell>
               <TableCell>
                 <div className="space-y-1">
                   <div className="text-sm">{document.signers.length} signatário(s)</div>
                   {document.signers.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground truncate max-w-[150px]" title={document.signers.map((s) => s.name).join(", ")}>
                       {document.signers.slice(0, 2).map((s) => s.name).join(", ")}
                       {document.signers.length > 2 && "..."}
                     </div>
@@ -148,17 +226,19 @@ export function DocumentTable({
               <TableCell>
                 <DocumentStatusBadge status={document.status} />
               </TableCell>
-              <TableCell>{formatDate(document.uploadedAt)}</TableCell>
+              <TableCell>{formatDate(document.uploadedAt instanceof Date ? document.uploadedAt : new Date(document.uploadedAt))}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
                   {getActionButtons(document)}
                 </div>
               </TableCell>
             </TableRow>
-          ))
+          )          )
         )}
-      </TableBody>
-    </Table>
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { DocumentTable } from "@/components/document-table";
@@ -26,12 +26,17 @@ import { useRouter } from "next/navigation";
 
 export default function DocumentsPage() {
   const router = useRouter();
-  const { documents, removeDocument } = useDocumentStore();
+  const { documents, isLoading, fetchDocuments, removeDocument } = useDocumentStore();
   const { addLog } = useAuditStore();
   const { user } = useUser();
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+
+  // Carregar documentos ao montar o componente
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const filteredDocuments =
     statusFilter === "all"
@@ -43,23 +48,71 @@ export default function DocumentsPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (documentToDelete) {
-      const doc = documents.find((d) => d.id === documentToDelete);
-      removeDocument(documentToDelete);
-      addLog({
-        userId: user?.id || "unknown",
-        userName: user?.firstName && user?.lastName 
-          ? `${user.firstName} ${user.lastName}` 
-          : user?.firstName || user?.email || "Unknown",
-        action: "delete",
-        ip: "192.168.1.1",
-        documentId: documentToDelete,
-        documentName: doc?.name,
+  const handleDeleteMultiple = async (ids: string[]) => {
+    if (ids.length === 0) return;
+
+    try {
+      const response = await fetch("/api/documentos/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: ids }),
       });
-      toast.success("Documento excluído com sucesso");
-      setDeleteDialogOpen(false);
-      setDocumentToDelete(null);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao excluir documentos");
+      }
+
+      const result = await response.json();
+      
+      // Adicionar logs de auditoria
+      for (const docId of ids) {
+        const doc = documents.find((d) => d.id === docId);
+        addLog({
+          userId: user?.id || "unknown",
+          userName: user?.firstName && user?.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user?.firstName || user?.email || "Unknown",
+          action: "delete",
+          ip: "192.168.1.1",
+          documentId: docId,
+          documentName: doc?.name,
+        });
+      }
+
+      // Recarregar documentos
+      await fetchDocuments();
+      
+      toast.success(result.message || `${ids.length} documento(s) excluído(s) com sucesso`);
+    } catch (error: any) {
+      console.error("Erro ao excluir documentos:", error);
+      toast.error(error.message || "Erro ao excluir documentos");
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (documentToDelete) {
+      try {
+        const doc = documents.find((d) => d.id === documentToDelete);
+        await removeDocument(documentToDelete);
+        
+        addLog({
+          userId: user?.id || "unknown",
+          userName: user?.firstName && user?.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user?.firstName || user?.email || "Unknown",
+          action: "delete",
+          ip: "192.168.1.1",
+          documentId: documentToDelete,
+          documentName: doc?.name,
+        });
+        toast.success("Documento excluído com sucesso");
+        setDeleteDialogOpen(false);
+        setDocumentToDelete(null);
+      } catch (error: any) {
+        console.error("Erro ao excluir documento:", error);
+        toast.error(error.message || "Erro ao excluir documento");
+      }
     }
   };
 
@@ -71,9 +124,42 @@ export default function DocumentsPage() {
     router.push(`/documentos/${id}`);
   };
 
-  const handleDownload = (id: string) => {
-    // Mock: Simular download
-    toast.success("Download iniciado");
+  const handleDownload = async (id: string) => {
+    try {
+      const response = await fetch(`/api/documentos/${id}/download`);
+      
+      if (!response.ok) {
+        // Tentar ler mensagem de erro do JSON
+        let errorMessage = "Erro ao baixar documento";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Se não conseguir ler JSON, usar mensagem padrão
+          errorMessage = `Erro ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const doc = documents.find((d) => d.id === id);
+      const fileName = doc?.fileName 
+        ? `${doc.fileName.replace('.pdf', '')}_assinado.pdf`
+        : `documento_assinado.pdf`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success("Download iniciado");
+    } catch (error: any) {
+      console.error("Erro ao baixar documento:", error);
+      toast.error(error.message || "Erro ao baixar documento");
+    }
   };
 
   return (
@@ -92,7 +178,7 @@ export default function DocumentsPage() {
       />
 
       {/* Filtros */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
         <div className="flex items-center gap-2">
           <Label htmlFor="status-filter">Status:</Label>
           <Select
@@ -106,16 +192,21 @@ export default function DocumentsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending_config">Aguardando configuração</SelectItem>
-              <SelectItem value="pending_signature">Aguardando assinatura</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="waiting_signers">Aguardando signatários</SelectItem>
+              <SelectItem value="signing">Assinando</SelectItem>
               <SelectItem value="signed">Assinado</SelectItem>
-              <SelectItem value="error">Erro</SelectItem>
+              <SelectItem value="completed">Concluído</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {filteredDocuments.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Carregando documentos...
+        </div>
+      ) : filteredDocuments.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Nenhum documento encontrado"
@@ -135,7 +226,9 @@ export default function DocumentsPage() {
           onConfigure={handleConfigure}
           onSign={handleSign}
           onDelete={handleDelete}
+          onDeleteMultiple={handleDeleteMultiple}
           onDownload={handleDownload}
+          showSelection={true}
         />
       )}
 

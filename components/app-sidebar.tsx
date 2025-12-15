@@ -25,7 +25,7 @@ const navigation = [
     icon: ShieldCheck,
   },
   {
-    title: "Documentos",
+    title: "Documentos e Assinatura",
     href: "/documentos",
     icon: FileText,
   },

@@ -37,7 +37,7 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
     if (user.firstName || user.lastName) {
       return `${user.firstName || ""} ${user.lastName || ""}`.trim();
     }
-    return user.emailAddresses[0]?.emailAddress || "Sem nome";
+    return user.email || "Sem nome";
   };
 
   const getUserEmail = (user: User) => {
@@ -49,18 +49,19 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nome</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Data de Criação</TableHead>
-          <TableHead className="text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[180px]">Nome</TableHead>
+              <TableHead className="min-w-[200px]">Email</TableHead>
+              <TableHead className="min-w-[100px]">Role</TableHead>
+              <TableHead className="min-w-[120px]">Status</TableHead>
+              <TableHead className="min-w-[140px]">Data de Criação</TableHead>
+              <TableHead className="text-right min-w-[100px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
         {users.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center text-muted-foreground">
@@ -70,8 +71,16 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
         ) : (
           users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell className="font-medium">{getUserName(user)}</TableCell>
-              <TableCell>{getUserEmail(user)}</TableCell>
+              <TableCell className="font-medium">
+                <div className="max-w-[180px] truncate" title={getUserName(user)}>
+                  {getUserName(user)}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="max-w-[200px] truncate" title={getUserEmail(user)}>
+                  {getUserEmail(user)}
+                </div>
+              </TableCell>
               <TableCell>
                 <UserRoleBadge role={getUserRole(user)} />
               </TableCell>
@@ -107,10 +116,11 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
                 </div>
               </TableCell>
             </TableRow>
-          ))
+          )          )
         )}
-      </TableBody>
-    </Table>
+          </TableBody>
+        </Table>
+    </div>
   );
 }
 

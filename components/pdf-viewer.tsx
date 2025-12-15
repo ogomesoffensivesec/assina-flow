@@ -19,8 +19,8 @@ export function PDFViewer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Mock: Em produção, isso seria uma URL real do Vercel Blob ou similar
-  const mockUrl = documentUrl || "/api/documents/mock-pdf";
+  // Usar URL real da API
+  const pdfUrl = documentUrl || "";
 
   return (
     <Card className={className}>
@@ -42,16 +42,25 @@ export function PDFViewer({
                 <Skeleton className="w-full h-full" />
               </div>
             )}
-            <iframe
-              src={mockUrl}
-              className="w-full h-full border-0"
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setError(true);
-                setLoading(false);
-              }}
-              title={documentName || "Visualizador de PDF"}
-            />
+            {pdfUrl ? (
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                onLoad={() => setLoading(false)}
+                onError={() => {
+                  setError(true);
+                  setLoading(false);
+                }}
+                title={documentName || "Visualizador de PDF"}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-sm text-muted-foreground">
+                  URL do documento não fornecida
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

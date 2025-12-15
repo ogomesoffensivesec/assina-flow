@@ -35,8 +35,8 @@ export function SignaturesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="!max-w-[80vw] w-[80vw] h-[85vh] flex flex-col p-0" style={{ maxWidth: '80vw', width: '80vw' }}>
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <FileSignature className="h-5 w-5 text-primary" />
             Estatísticas de Assinaturas
@@ -46,9 +46,9 @@ export function SignaturesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Cards de Métricas */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium">Este Mês</CardTitle>

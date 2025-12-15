@@ -16,10 +16,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Verificar se é admin
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
+    // Permitir acesso a todos os usuários autenticados para visualização
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -56,10 +53,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
     const body = await request.json();
     const { emailAddress, firstName, lastName, password, role } = body;
 
@@ -71,12 +64,10 @@ export async function POST(request: Request) {
     }
 
     const result = await createUser({
-      emailAddress: [emailAddress],
+      email: emailAddress,
       firstName,
       lastName,
       password: password || undefined,
-      skipPasswordChecks: !password,
-      skipPasswordRequirement: !password,
       role: role || "user",
     });
 
@@ -99,10 +90,6 @@ export async function PUT(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
-    if (user.role !== "admin") {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
     const body = await request.json();

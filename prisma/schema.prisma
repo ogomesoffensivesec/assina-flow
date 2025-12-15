@@ -19,8 +19,10 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  sessions Session[]
-  password Password?
+  sessions     Session[]
+  password     Password?
+  documents    Document[]
+  certificates Certificate[]
 
   @@map("user")
 }
@@ -43,4 +45,79 @@ model Password {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password")
+}
+
+model Document {
+  id         String    @id @default(cuid())
+  name       String
+  fileName   String    @map("file_name")
+  fileSize   Int       @map("file_size")
+  pageCount  Int       @map("page_count")
+  status     String    @default("pending") // pending, waiting_signers, signing, signed, completed
+  uploadedAt DateTime  @default(now()) @map("uploaded_at")
+  signedAt   DateTime? @map("signed_at")
+  hash       String?
+  signedHash String?   @map("signed_hash")
+
+  // IDs internos da Clicksign (não expostos ao frontend)
+  clicksignEnvelopeKey String? @map("clicksign_envelope_key")
+  clicksignDocumentKey String? @map("clicksign_document_key")
+
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signers Signer[]
+
+  @@map("document")
+}
+
+model Signer {
+  id             String    @id @default(cuid())
+  name           String
+  email          String
+  documentNumber String    @map("document_number") // CPF ou CNPJ (obrigatório)
+  documentType   String    @default("PF") @map("document_type") // PF ou PJ
+  phoneNumber    String?   @map("phone_number") // WhatsApp
+  identification String? // comprador, locador, etc.
+  signatureType  String    @default("electronic") @map("signature_type") // digital_a1, electronic
+  order          Int       @default(1)
+  status         String    @default("pending") // pending, signed, error
+  signedAt       DateTime? @map("signed_at")
+  certificateId  String?   @map("certificate_id")
+
+  // IDs internos da Clicksign (não expostos ao frontend)
+  clicksignSignerKey      String? @map("clicksign_signer_key")
+  clicksignRequirementKey String? @map("clicksign_requirement_key")
+
+  documentId String   @map("document_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("signer")
+}
+
+model Certificate {
+  id               String   @id @default(cuid())
+  name             String
+  type             String // PF ou PJ
+  cpfCnpj          String   @map("cpf_cnpj")
+  issuedBy         String   @map("issued_by")
+  serialNumber     String   @map("serial_number")
+  validFrom        DateTime @map("valid_from")
+  validTo          DateTime @map("valid_to")
+  status           String   @default("active") // active, inactive
+  blobUrl          String   @map("blob_url") // URL do arquivo no Vercel Blob
+  encryptedPassword String?  @map("encrypted_password") // Senha criptografada do certificado
+
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("certificate")
 }

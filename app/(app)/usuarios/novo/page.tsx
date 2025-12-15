@@ -14,11 +14,8 @@ export default function NewUserPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) {
-      toast.error("Acesso negado. Apenas administradores podem criar usuários.");
-      router.push("/dashboard");
-    }
-  }, [isAdmin, router]);
+    // Acesso permitido para todos os usuários autenticados
+  }, [router]);
 
   const handleSubmit = async (data: UserFormData) => {
     setIsLoading(true);
@@ -46,9 +43,6 @@ export default function NewUserPage() {
     }
   };
 
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="space-y-6">

@@ -37,7 +37,7 @@ type CertificateFormData = z.infer<typeof certificateSchema>;
 
 export default function NewCertificatePage() {
   const router = useRouter();
-  const { addCertificate } = useCertificateStore();
+  const { fetchCertificates } = useCertificateStore();
   const { addLog } = useAuditStore();
   const { user } = useUser();
   const [file, setFile] = useState<File | null>(null);
@@ -73,51 +73,63 @@ export default function NewCertificatePage() {
     setIsSubmitting(true);
     setUploadProgress(0);
 
-    // Mock: Simular upload e processamento
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
+    try {
+      // Criar FormData para upload
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("name", data.name);
+      formData.append("type", data.type);
+      formData.append("password", data.password);
+
+      // Simular progresso de upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      // Fazer upload via API
+      const response = await fetch("/api/certificados", {
+        method: "POST",
+        body: formData,
       });
-    }, 200);
 
-    // Simular delay de processamento
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-    clearInterval(progressInterval);
-    setUploadProgress(100);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao fazer upload do certificado");
+      }
 
-    // Mock: Dados do certificado (em produção viria da API)
-    const mockCertificate = {
-      name: data.name,
-      type: data.type as CertificateType,
-      cpfCnpj: data.type === "PF" ? "123.456.789-00" : "12.345.678/0001-90",
-      issuedBy: "AC Soluti Certificadora Digital",
-      serialNumber: `SN${Date.now()}`,
-      validFrom: new Date(),
-      validTo: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 ano
-      status: "active" as const,
-      validityStatus: getValidityStatus(
-        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      ),
-    };
+      const certificate = await response.json();
 
-    addCertificate(mockCertificate);
-    addLog({
-      userId: user?.id || "unknown",
-      userName: user?.firstName && user?.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user?.firstName || user?.email || "Unknown",
-      action: "certificate_add",
-      ip: "192.168.1.1", // Mock
-      details: `Certificado ${data.name} adicionado`,
-    });
+      // Recarregar certificados
+      await fetchCertificates();
 
-    toast.success("Certificado cadastrado com sucesso!");
-    router.push("/certificados");
+      addLog({
+        userId: user?.id || "unknown",
+        userName: user?.firstName && user?.lastName 
+          ? `${user.firstName} ${user.lastName}` 
+          : user?.firstName || user?.email || "Unknown",
+        action: "certificate_add",
+        ip: "192.168.1.1",
+        details: `Certificado ${data.name} adicionado`,
+      });
+
+      toast.success("Certificado cadastrado com sucesso!");
+      router.push("/certificados");
+    } catch (error: any) {
+      console.error("Erro ao fazer upload do certificado:", error);
+      toast.error(error.message || "Erro ao fazer upload do certificado");
+      setUploadProgress(0);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

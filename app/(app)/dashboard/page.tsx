@@ -11,6 +11,18 @@ import { SignaturesDialog } from "@/components/dashboard/signatures-dialog";
 import { FileText, ShieldCheck, FileSignature, Plus, Upload, TrendingUp, ArrowRight, Activity } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils/date";
+
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return "agora";
+  if (diffInSeconds < 3600) return `há ${Math.floor(diffInSeconds / 60)} minutos`;
+  if (diffInSeconds < 86400) return `há ${Math.floor(diffInSeconds / 3600)} horas`;
+  if (diffInSeconds < 2592000) return `há ${Math.floor(diffInSeconds / 86400)} dias`;
+  return formatDate(date);
+}
 
 export default function DashboardPage() {
   const { certificates } = useCertificateStore();
@@ -21,28 +33,40 @@ export default function DashboardPage() {
 
   const activeCertificates = certificates.filter((c) => c.status === "active").length;
   const pendingDocuments = documents.filter(
-    (d) => d.status === "pending_config" || d.status === "pending_signature"
+    (d) => d.status === "pending" || d.status === "waiting_signers"
   ).length;
-  const signedDocuments = documents.filter((d) => d.status === "signed").length;
+  const signingDocuments = documents.filter((d) => d.status === "signing").length;
+  const signedDocuments = documents.filter((d) => d.status === "signed" || d.status === "completed").length;
 
-  // Mock: Gráfico de assinaturas por mês
-  const monthlySignatures = [
-    { month: "Jan", count: 5 },
-    { month: "Fev", count: 8 },
-    { month: "Mar", count: 12 },
-    { month: "Abr", count: 15 },
-    { month: "Mai", count: 18 },
-    { month: "Jun", count: 22 },
-  ];
+  // Calcular assinaturas por mês (últimos 6 meses)
+  const now = new Date();
+  const monthlySignatures = Array.from({ length: 6 }, (_, i) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthName = date.toLocaleDateString("pt-BR", { month: "short" });
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    
+    const count = documents.filter((d) => {
+      if (!d.signedAt) return false;
+      const signedDate = new Date(d.signedAt);
+      return signedDate >= monthStart && signedDate <= monthEnd;
+    }).length;
+    
+    return { month: monthName, count };
+  }).reverse();
 
-  const maxCount = Math.max(...monthlySignatures.map((m) => m.count));
+  const maxCount = Math.max(...monthlySignatures.map((m) => m.count), 1);
 
-  // Mock: Atividades recentes
-  const recentActivities = [
-    { type: "signature", document: "Contrato XYZ", time: "há 2 horas", user: "João Silva" },
-    { type: "upload", document: "Proposta ABC", time: "há 5 horas", user: "Maria Santos" },
-    { type: "certificate", action: "Certificado adicionado", time: "há 1 dia", user: "Admin" },
-  ];
+  // Atividades recentes (últimos documentos)
+  const recentActivities = documents
+    .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+    .slice(0, 3)
+    .map((doc) => ({
+      type: doc.status === "completed" || doc.status === "signed" ? "signature" : "upload",
+      document: doc.name,
+      time: formatRelativeTime(new Date(doc.uploadedAt)),
+      user: "Você", // TODO: buscar nome do usuário
+    }));
 
   return (
     <div className="space-y-6">
@@ -54,7 +78,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Cards de Métricas - Interativos */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-3">
         <Card
           className="cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 hover:scale-[1.02]"
           onClick={() => setCertificatesDialogOpen(true)}
@@ -123,7 +147,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Grid Principal */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Ações Rápidas */}
         <Card>
           <CardHeader>

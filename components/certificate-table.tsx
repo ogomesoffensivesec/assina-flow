@@ -13,33 +13,38 @@ import { Badge } from "@/components/ui/badge";
 import { Certificate } from "@/lib/stores/certificate-store";
 import { DateExpiresBadge } from "@/components/date-expires-badge";
 import { formatDate } from "@/lib/utils/date";
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, Download, Key } from "lucide-react";
 import Link from "next/link";
 
 interface CertificateTableProps {
   certificates: Certificate[];
   onView?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onDownload?: (id: string) => void;
+  onViewPassword?: (id: string) => void;
 }
 
 export function CertificateTable({
   certificates,
   onView,
   onDelete,
+  onDownload,
+  onViewPassword,
 }: CertificateTableProps) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nome</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>CNPJ/CPF</TableHead>
-          <TableHead>Validade</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[200px]">Nome</TableHead>
+              <TableHead className="min-w-[120px]">Tipo</TableHead>
+              <TableHead className="min-w-[150px]">CNPJ/CPF</TableHead>
+              <TableHead className="min-w-[220px]">Validade</TableHead>
+              <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="text-right min-w-[100px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
         {certificates.length === 0 ? (
           <TableRow>
             <TableCell colSpan={6} className="text-center text-muted-foreground">
@@ -73,6 +78,27 @@ export function CertificateTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
+                  {onViewPassword && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onViewPassword(certificate.id)}
+                      title={certificate.hasPassword ? "Ver senha salva" : "Sem senha salva"}
+                      className={certificate.hasPassword ? "" : "opacity-50"}
+                    >
+                      <Key className={`h-4 w-4 ${certificate.hasPassword ? "text-primary" : ""}`} />
+                    </Button>
+                  )}
+                  {onDownload && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDownload(certificate.id)}
+                      title="Baixar certificado"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  )}
                   {onView && (
                     <Button
                       variant="ghost"
@@ -97,10 +123,11 @@ export function CertificateTable({
                 </div>
               </TableCell>
             </TableRow>
-          ))
+          )          )
         )}
-      </TableBody>
-    </Table>
+          </TableBody>
+        </Table>
+    </div>
   );
 }
 

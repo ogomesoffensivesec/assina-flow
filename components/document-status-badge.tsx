@@ -14,17 +14,19 @@ export function DocumentStatusBadge({
   className,
 }: DocumentStatusBadgeProps) {
   const variants: Record<DocumentStatus, string> = {
-    pending_config: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-    pending_signature: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+    waiting_signers: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+    signing: "bg-purple-500/10 text-purple-700 dark:text-purple-400",
     signed: "bg-green-500/10 text-green-700 dark:text-green-400",
-    error: "bg-red-500/10 text-red-700 dark:text-red-400",
+    completed: "bg-green-600/10 text-green-800 dark:text-green-300",
   };
 
   const labels: Record<DocumentStatus, string> = {
-    pending_config: "Aguardando configuração",
-    pending_signature: "Aguardando assinatura",
+    pending: "Pendente",
+    waiting_signers: "Aguardando signatários",
+    signing: "Assinando",
     signed: "Assinado",
-    error: "Erro",
+    completed: "Concluído",
   };
 
   return (

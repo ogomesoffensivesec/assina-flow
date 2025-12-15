@@ -1,21 +1,17 @@
-import { lucia } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
+  const { userId } = await auth();
   
-  if (sessionId) {
-    await lucia.invalidateSession(sessionId);
+  if (!userId) {
+    return NextResponse.json({ success: false }, { status: 401 });
   }
 
-  const sessionCookie = lucia.createBlankSessionCookie();
-  cookies().set(
-    sessionCookie.name,
-    sessionCookie.value,
-    sessionCookie.attributes
-  );
-
+  // O Clerk gerencia o sign-out automaticamente via middleware
+  // Este endpoint pode ser usado para compatibilidade, mas o sign-out
+  // deve ser feito no cliente usando useClerk().signOut()
+  
   return NextResponse.json({ success: true });
 }
 
