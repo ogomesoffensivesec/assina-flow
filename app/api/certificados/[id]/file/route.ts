@@ -107,7 +107,8 @@ export async function POST(
 
       // Tentar extrair certificado para validar senha
       const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-      if (!certBags || !certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+      const certBagArray = certBags?.[forge.pki.oids.certBag];
+      if (!certBagArray || certBagArray.length === 0) {
         return NextResponse.json(
           { error: "Senha incorreta ou certificado inválido" },
           { status: 401 }

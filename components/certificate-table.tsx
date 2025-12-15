@@ -64,9 +64,9 @@ export function CertificateTable({
               <TableCell>
                 <div className="space-y-1">
                   <div className="text-sm">
-                    {formatDate(certificate.validFrom)} - {formatDate(certificate.validTo)}
+                    {formatDate(new Date(certificate.validFrom))} - {formatDate(new Date(certificate.validTo))}
                   </div>
-                  <DateExpiresBadge validTo={certificate.validTo} />
+                  <DateExpiresBadge validTo={new Date(certificate.validTo)} />
                 </div>
               </TableCell>
               <TableCell>

@@ -30,7 +30,7 @@ export function CertificateCard({
               {certificate.type === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
             </CardDescription>
           </div>
-          <DateExpiresBadge validTo={certificate.validTo} />
+          <DateExpiresBadge validTo={new Date(certificate.validTo)} />
         </div>
       </CardHeader>
       <CardContent>
@@ -42,8 +42,8 @@ export function CertificateCard({
           <div>
             <p className="text-xs text-muted-foreground">Validade</p>
             <p className="text-sm">
-              {formatDate(certificate.validFrom)} até{" "}
-              {formatDate(certificate.validTo)}
+              {formatDate(new Date(certificate.validFrom))} até{" "}
+              {formatDate(new Date(certificate.validTo))}
             </p>
           </div>
           <div className="flex items-center gap-2 pt-2">

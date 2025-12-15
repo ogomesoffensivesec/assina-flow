@@ -151,13 +151,13 @@ export default function CertificateDetailPage({
             <div>
               <p className="text-xs text-muted-foreground">Válido de</p>
               <p className="text-sm font-medium">
-                {formatDate(certificate.validFrom)} até {formatDate(certificate.validTo)}
+                {formatDate(new Date(certificate.validFrom))} até {formatDate(new Date(certificate.validTo))}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Status de Validade</p>
               <div className="mt-1">
-                <DateExpiresBadge validTo={certificate.validTo} />
+                <DateExpiresBadge validTo={new Date(certificate.validTo)} />
               </div>
             </div>
             <div>
@@ -198,7 +198,7 @@ export default function CertificateDetailPage({
                   {signedDocuments.map((doc) => (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium">{doc.name}</TableCell>
-                      <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                      <TableCell>{formatDate(new Date(doc.uploadedAt))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

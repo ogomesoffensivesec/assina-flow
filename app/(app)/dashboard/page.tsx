@@ -263,7 +263,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {activity.document || activity.action}
+                      {activity.document}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {activity.user} • {activity.time}

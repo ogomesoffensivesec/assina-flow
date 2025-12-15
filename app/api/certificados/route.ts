@@ -141,11 +141,12 @@ export async function POST(request: NextRequest) {
 
       // Extrair certificado
       const certBags = p12.getBags({ bagType: forge.pki.oids.certBag });
-      if (!certBags || !certBags[forge.pki.oids.certBag] || certBags[forge.pki.oids.certBag].length === 0) {
+      const certBagArray = certBags?.[forge.pki.oids.certBag];
+      if (!certBagArray || certBagArray.length === 0) {
         throw new Error("Certificado não encontrado no arquivo .pfx");
       }
 
-      const cert = certBags[forge.pki.oids.certBag][0].cert;
+      const cert = certBagArray[0]?.cert;
       if (!cert) {
         throw new Error("Não foi possível extrair o certificado");
       }

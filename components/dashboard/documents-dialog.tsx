@@ -129,7 +129,7 @@ export function DocumentsDialog({
                       <TableCell>
                         <DocumentStatusBadge status={doc.status} />
                       </TableCell>
-                      <TableCell>{formatDate(doc.uploadedAt)}</TableCell>
+                      <TableCell>{formatDate(new Date(doc.uploadedAt))}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/documentos/${doc.id}`}>Ver</Link>

@@ -68,14 +68,19 @@ export default function DocumentSignersPage({
   const handleSaveSigner = async (data: {
     name: string;
     email: string;
-    signatureType: "digital_a1" | "electronic";
-    cpf?: string;
+    documentType: "PF" | "PJ";
+    documentNumber: string;
+    phoneNumber: string;
+    identification: string;
+    identificationOther?: string;
     order: number;
   }) => {
-    // CPF já está sendo passado no data
     try {
       if (editingSigner) {
-        await updateSigner(document.id, editingSigner.id, data);
+        await updateSigner(document.id, editingSigner.id, {
+          ...data,
+          signatureType: editingSigner.signatureType || "electronic",
+        });
         
         // Recarregar documento para obter dados atualizados
         await fetchDocument(document.id);
@@ -84,6 +89,7 @@ export default function DocumentSignersPage({
       } else {
         await addSigner(document.id, {
           ...data,
+          signatureType: "electronic",
           status: "pending",
         });
         

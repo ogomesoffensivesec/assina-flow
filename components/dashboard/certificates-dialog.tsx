@@ -100,9 +100,9 @@ export function CertificatesDialog({
                       <TableCell>
                         <div className="space-y-1">
                           <div className="text-sm">
-                            {formatDate(cert.validFrom)} - {formatDate(cert.validTo)}
+                            {formatDate(new Date(cert.validFrom))} - {formatDate(new Date(cert.validTo))}
                           </div>
-                          <DateExpiresBadge validTo={cert.validTo} />
+                          <DateExpiresBadge validTo={new Date(cert.validTo)} />
                         </div>
                       </TableCell>
                       <TableCell>
