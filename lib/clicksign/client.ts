@@ -6,11 +6,19 @@
  * O envelope é definido pelo path da URL: POST /envelopes/{envelopeId}/documents
  */
 
-const CLICKSIGN_API_BASE = process.env.CLICKSIGN_API_BASE || "https://sandbox.clicksign.com/api/v3";
+// Em produção, usar a URL de produção da Clicksign
+const CLICKSIGN_API_BASE = process.env.CLICKSIGN_API_BASE || 
+  (process.env.NODE_ENV === 'production' 
+    ? "https://app.clicksign.com/api/v3" 
+    : "https://sandbox.clicksign.com/api/v3");
 const CLICKSIGN_ACCESS_TOKEN = process.env.CLICKSIGN_ACCESS_TOKEN;
 
 if (!CLICKSIGN_ACCESS_TOKEN) {
-  console.warn("⚠️ CLICKSIGN_ACCESS_TOKEN não configurado. A integração com Clicksign não funcionará.");
+  if (process.env.NODE_ENV === 'production') {
+    console.error("❌ CLICKSIGN_ACCESS_TOKEN não configurado. A integração com Clicksign não funcionará.");
+  } else {
+    console.warn("⚠️ CLICKSIGN_ACCESS_TOKEN não configurado. A integração com Clicksign não funcionará.");
+  }
 }
 
 // ============================================================================

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/utils";
 import forge from "node-forge";
 import { decryptPassword, encryptPassword } from "@/lib/crypto/certificate-password";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/certificados/[id]/file
@@ -144,13 +145,7 @@ export async function POST(
       },
     });
   } catch (error: any) {
-    console.error("Erro ao baixar certificado:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao baixar certificado. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/certificados/[id]/file", userId: error.user?.id });
   }
 }
 

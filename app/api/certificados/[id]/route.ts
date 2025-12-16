@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/certificados/[id]
@@ -46,13 +47,7 @@ export async function GET(
       createdAt: certificate.createdAt,
     });
   } catch (error: any) {
-    console.error("Erro ao buscar certificado:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao buscar certificado. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/certificados/[id]", userId: error.user?.id });
   }
 }
 
@@ -105,13 +100,7 @@ export async function PATCH(
       status: updated.status,
     });
   } catch (error: any) {
-    console.error("Erro ao atualizar certificado:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao atualizar certificado. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "PATCH /api/certificados/[id]", userId: error.user?.id });
   }
 }
 
@@ -159,13 +148,7 @@ export async function DELETE(
       message: "Certificado excluído com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir certificado:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao excluir certificado. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "DELETE /api/certificados/[id]", userId: error.user?.id });
   }
 }
 

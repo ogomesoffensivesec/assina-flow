@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { activateEnvelope, verifyAllSignersHaveRequirements, notifyEnvelope } from "@/lib/clicksign/service";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * POST /api/documentos/[id]/preparar-enviar
@@ -109,17 +110,7 @@ export async function POST(
       status: "signing",
     });
   } catch (error: any) {
-    console.error("[DEBUG] Erro ao preparar e enviar documento:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao preparar e enviar documento. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/documentos/[id]/preparar-enviar", userId: error.user?.id });
   }
 }
 

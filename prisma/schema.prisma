@@ -119,5 +119,6 @@ model Certificate {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("certificate")
 }

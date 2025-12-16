@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { clicksignClient } from "@/lib/clicksign/client";
 import { activateEnvelope, startSignature, verifyAllSignersHaveRequirements, notifyEnvelope } from "@/lib/clicksign/service";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * POST /api/documentos/[id]/assinar
@@ -225,16 +226,6 @@ export async function POST(
       message: "Documento assinado com sucesso",
     });
   } catch (error: any) {
-    console.error("[DEBUG] Erro ao assinar documento:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao assinar documento. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/documentos/[id]/assinar", userId: error.user?.id });
   }
 }

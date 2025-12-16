@@ -5,6 +5,7 @@ import type { ClicksignSignerAttributes } from "@/lib/clicksign/client";
 import { requireAuth } from "@/lib/auth/utils";
 import { generateIdFromEntropySize } from "lucia";
 import { validateCPF, validateCNPJ } from "@/lib/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * POST /api/documentos/[id]/signatarios
@@ -241,17 +242,7 @@ export async function POST(
       order: signer.order,
     });
   } catch (error: any) {
-    console.error("[DEBUG] Erro ao adicionar signatário:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao adicionar signatário. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/documentos/[id]/signatarios", userId: error.user?.id });
   }
 }
 

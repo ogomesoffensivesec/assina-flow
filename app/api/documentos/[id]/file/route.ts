@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { clicksignClient } from "@/lib/clicksign/client";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/documentos/[id]/file
@@ -81,13 +82,7 @@ export async function GET(
       { status: 404 }
     );
   } catch (error: any) {
-    console.error("Erro ao buscar PDF:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao buscar PDF. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/documentos/[id]/file", userId: error.user?.id });
   }
 }
 

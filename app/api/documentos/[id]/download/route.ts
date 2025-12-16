@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { clicksignClient } from "@/lib/clicksign/client";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -178,9 +179,6 @@ export async function GET(
       );
     }
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || "Erro ao baixar documento. Tente novamente." },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/documentos/[id]/download", userId: error.user?.id });
   }
 }

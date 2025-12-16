@@ -5,6 +5,7 @@ import { generateIdFromEntropySize } from "lucia";
 import { put } from "@vercel/blob";
 import forge from "node-forge";
 import { encryptPassword } from "@/lib/crypto/certificate-password";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/certificados
@@ -14,10 +15,12 @@ export async function GET(request: NextRequest) {
   try {
     const { user } = await requireAuth();
 
-    console.log("[CERTIFICADOS] Buscando certificados para usuário:", {
-      userId: user.id,
-      email: user.email,
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[CERTIFICADOS] Buscando certificados para usuário:", {
+        userId: user.id,
+        email: user.email,
+      });
+    }
 
     const certificates = await db.certificate.findMany({
       where: {
@@ -28,19 +31,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log("[CERTIFICADOS] Certificados encontrados:", certificates.length);
-    
-    // Verificar se há certificados com outros userIds (para debug)
-    const allCertificates = await db.certificate.findMany({
-      select: {
-        id: true,
-        userId: true,
-        name: true,
-      },
-      take: 5, // Apenas os primeiros 5 para debug
-    });
-    
-    console.log("[CERTIFICADOS] Primeiros certificados no banco (debug):", allCertificates);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[CERTIFICADOS] Certificados encontrados:", certificates.length);
+    }
 
     return NextResponse.json({
       certificates: certificates.map((cert) => ({
@@ -58,13 +51,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
-    console.error("[CERTIFICADOS] Erro ao listar certificados:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao listar certificados. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/certificados", userId: error.user?.id });
   }
 }
 
@@ -239,13 +226,7 @@ export async function POST(request: NextRequest) {
       status: certificate.status,
     });
   } catch (error: any) {
-    console.error("Erro ao criar certificado:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao criar certificado. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/certificados", userId: error.user?.id });
   }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { clicksignClient } from "@/lib/clicksign/client";
 import { requireAuth } from "@/lib/auth/utils";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/documentos/[id]
@@ -185,13 +186,7 @@ export async function GET(
       })),
     });
   } catch (error: any) {
-    console.error("Erro ao buscar documento:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao buscar documento. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/documentos/[id]", userId: error.user?.id });
   }
 }
 
@@ -266,13 +261,7 @@ export async function DELETE(
       message: "Documento excluído com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir documento:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao excluir documento. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "DELETE /api/documentos/[id]", userId: error.user?.id });
   }
 }
 

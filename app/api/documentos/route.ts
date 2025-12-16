@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/utils";
 import { generateIdFromEntropySize } from "lucia";
 import { createHash } from "crypto";
 import { PDFDocument } from "pdf-lib";
+import { handleError } from "@/lib/utils/error-handler";
 
 /**
  * GET /api/documentos
@@ -219,13 +220,7 @@ export async function GET(request: NextRequest) {
       documents: finalDocuments,
     });
   } catch (error: any) {
-    console.error("Erro ao listar documentos:", error);
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao listar documentos. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/documentos", userId: error.user?.id });
   }
 }
 
@@ -359,17 +354,7 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
   } catch (error: any) {
-    console.error("[DEBUG] Erro ao criar documento:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
-    return NextResponse.json(
-      {
-        error: error.message || "Erro ao criar documento. Tente novamente.",
-      },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/documentos", userId: error.user?.id });
   }
 }
 

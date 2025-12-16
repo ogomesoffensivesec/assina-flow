@@ -16,7 +16,6 @@ if (!databaseUrl) {
   );
 }
 
-console.log("databaseUrl", databaseUrl);
 // Criar pool de conexão PostgreSQL com configurações de timeout
 const pool =
   globalForPrisma.pool ??
@@ -24,8 +23,11 @@ const pool =
     connectionString: databaseUrl,
     max: 10, // máximo de conexões no pool
     idleTimeoutMillis: 30000, // tempo antes de fechar conexões idle
-    connectionTimeoutMillis: 20000, // timeout para estabelecer conexão (aumentado para 20s)
-    query_timeout: 30000, // timeout para queries (30s)
+    connectionTimeoutMillis: 10000, // timeout para estabelecer conexão (10s)
+    query_timeout: 20000, // timeout para queries (20s)
+    // Configurações adicionais para melhorar estabilidade
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
   });
 
 if (process.env.NODE_ENV !== "production") {

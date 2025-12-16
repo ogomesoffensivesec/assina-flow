@@ -30,8 +30,14 @@ export default function RootLayout({
 }>) {
   const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   
+  // Validar variável obrigatória em produção
+  if (!clerkKey && process.env.NODE_ENV === 'production') {
+    console.error('[LAYOUT] NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY não configurada');
+    // Em produção, ainda assim tentar renderizar, mas logar erro
+  }
+  
   return (
-    <ClerkProvider publishableKey={clerkKey}>
+    <ClerkProvider publishableKey={clerkKey || ""}>
       <html lang="pt-BR" className="dark" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -7,6 +7,7 @@ import {
   listUsers,
   updateUserRole,
 } from "@/lib/auth/admin";
+import { handleError } from "@/lib/utils/error-handler";
 
 export async function GET(request: Request) {
   try {
@@ -38,10 +39,7 @@ export async function GET(request: Request) {
       totalCount: result.users?.totalCount || 0,
     });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Erro ao listar usuários" },
-      { status: 500 }
-    );
+    return handleError(error, { route: "GET /api/users" });
   }
 }
 
@@ -77,10 +75,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ user: result.user });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Erro ao criar usuário" },
-      { status: 500 }
-    );
+    return handleError(error, { route: "POST /api/users" });
   }
 }
 
@@ -117,10 +112,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ user: result.user });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Erro ao atualizar usuário" },
-      { status: 500 }
-    );
+    return handleError(error, { route: "PUT /api/users" });
   }
 }
 
@@ -154,10 +146,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Erro ao excluir usuário" },
-      { status: 500 }
-    );
+    return handleError(error, { route: "DELETE /api/users" });
   }
 }
 
