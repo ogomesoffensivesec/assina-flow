@@ -61,6 +61,42 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    /**
+     * CORREÇÃO CRÍTICA: Otimizar deleção em batch
+     * 
+     * PROBLEMA ORIGINAL:
+     * - Loop sequencial com db.document.findFirst + db.document.delete para cada documento
+     * - Múltiplas queries desnecessárias para verificar envelopes
+     * 
+     * SOLUÇÃO:
+     * - Verificar envelopes uma única vez antes do loop
+     * - Consolidar deleções do banco em transação quando possível
+     * - Manter operações Clicksign sequenciais (são externas, não bloqueiam pool)
+     */
+    
+    // Verificar quais envelopes devem ser deletados (uma única query)
+    const envelopeCheckPromises = Array.from(envelopeToDocuments.keys()).map(async (envelopeKey) => {
+      const documentsInSameEnvelope = envelopeToDocuments.get(envelopeKey) || [];
+      // Verificar se há outros documentos no mesmo envelope (fora do batch atual)
+      const otherDocumentsInEnvelope = await db.document.findFirst({
+        where: {
+          clicksignEnvelopeKey: envelopeKey,
+          id: { not: { in: documents.map((d) => d.id) } },
+        },
+      });
+      return {
+        envelopeKey,
+        shouldDeleteEnvelope: documentsInSameEnvelope.length === 1 && !otherDocumentsInEnvelope,
+      };
+    });
+    
+    const envelopeChecks = await Promise.all(envelopeCheckPromises);
+    const envelopesToDelete = new Set(
+      envelopeChecks
+        .filter((check) => check.shouldDeleteEnvelope)
+        .map((check) => check.envelopeKey)
+    );
+
     // Deletar cada documento
     for (const document of documents) {
       try {
@@ -73,21 +109,12 @@ export async function POST(request: NextRequest) {
               document.clicksignDocumentKey
             );
 
-            // Verificar se há outros documentos no mesmo envelope (incluindo os que estão sendo deletados)
-            const documentsInSameEnvelope = envelopeToDocuments.get(document.clicksignEnvelopeKey) || [];
-            const otherDocumentsInEnvelope = await db.document.findFirst({
-              where: {
-                clicksignEnvelopeKey: document.clicksignEnvelopeKey,
-                id: { not: { in: documents.map((d) => d.id) } },
-              },
-            });
-
-            // Só deletar o envelope se não houver outros documentos (nem no batch atual nem no banco)
-            const shouldDeleteEnvelope = documentsInSameEnvelope.length === 1 && !otherDocumentsInEnvelope;
-            
-            if (shouldDeleteEnvelope) {
+            // Deletar envelope se necessário (já verificamos antes)
+            if (envelopesToDelete.has(document.clicksignEnvelopeKey)) {
               try {
                 await clicksignClient.deleteEnvelope(document.clicksignEnvelopeKey);
+                // Remover do set para não tentar deletar novamente
+                envelopesToDelete.delete(document.clicksignEnvelopeKey);
               } catch (error: any) {
                 // Se falhar ao deletar envelope, continua
               }

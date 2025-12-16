@@ -8,19 +8,18 @@ import { encryptPassword } from "@/lib/crypto/certificate-password";
 import { handleError } from "@/lib/utils/error-handler";
 
 /**
+ * Bloquear cache e reexecução automática
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/**
  * GET /api/certificados
  * Lista todos os certificados do usuário
  */
 export async function GET(request: NextRequest) {
   try {
     const { user } = await requireAuth();
-
-    if (process.env.NODE_ENV === "development") {
-      console.log("[CERTIFICADOS] Buscando certificados para usuário:", {
-        userId: user.id,
-        email: user.email,
-      });
-    }
 
     const certificates = await db.certificate.findMany({
       where: {
@@ -30,10 +29,6 @@ export async function GET(request: NextRequest) {
         validTo: "asc", // Ordenar por data de validade: do mais perto de vencer para o mais distante
       },
     });
-
-    if (process.env.NODE_ENV === "development") {
-      console.log("[CERTIFICADOS] Certificados encontrados:", certificates.length);
-    }
 
     return NextResponse.json({
       certificates: certificates.map((cert) => ({

@@ -5,6 +5,12 @@ import { requireAuth } from "@/lib/auth/utils";
 import { handleError } from "@/lib/utils/error-handler";
 
 /**
+ * Bloquear cache e reexecução automática
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/**
  * GET /api/documentos/[id]
  * Obtém informações do documento e status da Clicksign
  */
@@ -40,22 +46,17 @@ export async function GET(
       );
     }
 
+    let finalDocument = document;
+
     // Sincronizar informações completas com a Clicksign se houver keys
     if (document.clicksignEnvelopeKey && document.clicksignDocumentKey) {
       try {
-        // Buscar informações completas do envelope
         const envelope = await clicksignClient.getEnvelope(document.clicksignEnvelopeKey);
-        
-        // Buscar informações completas do documento
         const clicksignDocument = await clicksignClient.getDocument(
           document.clicksignEnvelopeKey,
           document.clicksignDocumentKey
         );
-
-        // Buscar lista de signatários da Clicksign
         const clicksignSigners = await clicksignClient.getSigners(document.clicksignEnvelopeKey);
-
-        // Buscar lista de requisitos da Clicksign
         const clicksignRequirements = await clicksignClient.getRequirements(document.clicksignEnvelopeKey);
 
         // Mapear status da Clicksign para status interno
@@ -73,7 +74,6 @@ export async function GET(
           mappedStatus = document.signers.length > 0 ? "waiting_signers" : "pending";
         }
 
-        // Preparar dados para atualização
         const updateData: any = {
           status: mappedStatus,
         };
@@ -82,11 +82,7 @@ export async function GET(
           updateData.signedAt = new Date(clicksignDocument.attributes.finished_at);
         }
 
-        // Sincronizar signatários
-        const clicksignSignersMap = new Map(
-          clicksignSigners.map((s) => [s.attributes.email.toLowerCase(), s])
-        );
-
+        // Criar um mapa de requisitos por signerId
         const requirementsBySignerId = new Map<string, any[]>();
         clicksignRequirements.forEach((req) => {
           const signerId = req.relationships?.signer?.data?.id;
@@ -98,66 +94,62 @@ export async function GET(
           }
         });
 
-        // Atualizar signatários existentes
-        for (const clicksignSigner of clicksignSigners) {
-          const existingSigner = document.signers.find(
-            (s) => s.clicksignSignerKey === clicksignSigner.id || 
-                   s.email.toLowerCase() === clicksignSigner.attributes.email.toLowerCase()
-          );
+        /**
+         * TRANSAÇÃO: Consolidar todas as queries em uma única conexão
+         */
+        const updatedDocument = await db.$transaction(async (tx) => {
+          const signerUpdates = clicksignSigners
+            .map((clicksignSigner) => {
+              const existingSigner = document.signers.find(
+                (s) => s.clicksignSignerKey === clicksignSigner.id || 
+                       s.email.toLowerCase() === clicksignSigner.attributes.email.toLowerCase()
+              );
 
-          if (existingSigner) {
-            const signerRequirements = requirementsBySignerId.get(clicksignSigner.id) || [];
-            const authRequirement = signerRequirements.find((r) => r.attributes.action === "provide_evidence");
-            const qualificationRequirement = signerRequirements.find((r) => r.attributes.action === "agree");
+              if (!existingSigner) return null;
 
-            await db.signer.update({
-              where: { id: existingSigner.id },
-              data: {
-                name: clicksignSigner.attributes.name,
-                email: clicksignSigner.attributes.email,
-                phoneNumber: clicksignSigner.attributes.phone_number || existingSigner.phoneNumber,
-                status: clicksignSigner.attributes.status === "signed" ? "signed" : 
-                       clicksignSigner.attributes.status === "error" ? "error" : "pending",
-                clicksignSignerKey: clicksignSigner.id,
-                clicksignRequirementKey: authRequirement?.id || qualificationRequirement?.id || existingSigner.clicksignRequirementKey,
+              const signerRequirements = requirementsBySignerId.get(clicksignSigner.id) || [];
+              const authRequirement = signerRequirements.find((r) => r.attributes.action === "provide_evidence");
+              const qualificationRequirement = signerRequirements.find((r) => r.attributes.action === "agree");
+
+              return tx.signer.update({
+                where: { id: existingSigner.id },
+                data: {
+                  name: clicksignSigner.attributes.name,
+                  email: clicksignSigner.attributes.email,
+                  phoneNumber: clicksignSigner.attributes.phone_number || existingSigner.phoneNumber,
+                  status: clicksignSigner.attributes.status === "signed" ? "signed" : 
+                         clicksignSigner.attributes.status === "error" ? "error" : "pending",
+                  clicksignSignerKey: clicksignSigner.id,
+                  clicksignRequirementKey: authRequirement?.id || qualificationRequirement?.id || existingSigner.clicksignRequirementKey,
+                },
+              });
+            })
+            .filter((update): update is NonNullable<typeof update> => update !== null);
+
+          await Promise.all(signerUpdates);
+
+          await tx.document.update({
+            where: { id },
+            data: updateData,
+          });
+
+          return tx.document.findUnique({
+            where: { id },
+            include: {
+              signers: {
+                orderBy: { order: "asc" },
               },
-            });
-          }
-        }
-
-        // Atualizar documento no banco
-        await db.document.update({
-          where: { id },
-          data: updateData,
-        });
-
-        // Recarregar documento atualizado do banco para retornar dados atualizados
-        const updatedDocument = await db.document.findUnique({
-          where: { id },
-          include: {
-            signers: {
-              orderBy: { order: "asc" },
             },
-          },
+          });
         });
 
-        // Usar documento atualizado se disponível
-        const finalDocument = updatedDocument || document;
+        if (updatedDocument) {
+          finalDocument = updatedDocument;
+        }
       } catch (error) {
         console.error("Erro ao sincronizar com Clicksign:", error);
-        // Continua com os dados do banco
       }
     }
-
-    // Usar documento atualizado se foi sincronizado, senão usar o original
-    const finalDocument = (() => {
-      try {
-        // Tentar recarregar do banco se foi sincronizado
-        return document;
-      } catch {
-        return document;
-      }
-    })();
 
     return NextResponse.json({
       id: finalDocument.id,

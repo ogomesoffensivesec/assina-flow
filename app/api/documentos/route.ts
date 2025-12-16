@@ -9,6 +9,12 @@ import { PDFDocument } from "pdf-lib";
 import { handleError } from "@/lib/utils/error-handler";
 
 /**
+ * Bloquear cache e reexecução automática
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+/**
  * GET /api/documentos
  * Lista todos os documentos do usuário
  */
@@ -30,8 +36,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Sincronizar informações completas com a Clicksign para documentos que têm keys configuradas
-    // Usar Promise.allSettled para não falhar se algum documento der erro
+    /**
+     * Sincronizar documentos com Clicksign (opcional)
+     * Usa Promise.allSettled para não falhar se algum documento der erro
+     */
     const documentsWithSyncedStatus = await Promise.allSettled(
       documents.map(async (doc) => {
         // Sincronizar apenas se tiver envelopeKey e documentKey configurados
@@ -57,17 +65,13 @@ export async function GET(request: NextRequest) {
             const envelopeStatus = envelope.attributes.status;
             const docStatus = clicksignDocument.attributes.status;
             
-            // Status do envelope: draft, active, running, closed, canceled
-            // Status do documento: draft, available, ready, running, closed, finalized, canceled
             if (envelopeStatus === "closed" || envelopeStatus === "canceled" || 
                 docStatus === "closed" || docStatus === "finalized" || docStatus === "canceled") {
               mappedStatus = "completed";
             } else if (envelopeStatus === "running" || docStatus === "running") {
-              // Verificar se todos os signatários assinaram
               const allSigned = doc.signers.length > 0 && doc.signers.every((s) => s.status === "signed");
               mappedStatus = allSigned ? "signed" : "signing";
             } else if (envelopeStatus === "active" || envelopeStatus === "draft") {
-              // Se tem signatários, está aguardando assinatura, senão está aguardando signatários
               mappedStatus = doc.signers.length > 0 ? "waiting_signers" : "pending";
             }
 
@@ -76,16 +80,9 @@ export async function GET(request: NextRequest) {
               status: mappedStatus,
             };
 
-            // Atualizar signedAt se o documento foi finalizado
             if (clicksignDocument.attributes.finished_at) {
               updateData.signedAt = new Date(clicksignDocument.attributes.finished_at);
             }
-
-            // Sincronizar signatários com informações da Clicksign
-            // Criar um mapa de signatários da Clicksign por email
-            const clicksignSignersMap = new Map(
-              clicksignSigners.map((s) => [s.attributes.email.toLowerCase(), s])
-            );
 
             // Criar um mapa de requisitos por signerId
             const requirementsBySignerId = new Map<string, any[]>();
@@ -99,58 +96,63 @@ export async function GET(request: NextRequest) {
               }
             });
 
-            // Atualizar signatários existentes e criar novos se necessário
-            for (const clicksignSigner of clicksignSigners) {
-              const existingSigner = doc.signers.find(
-                (s) => s.clicksignSignerKey === clicksignSigner.id || 
-                       s.email.toLowerCase() === clicksignSigner.attributes.email.toLowerCase()
-              );
+            /**
+             * TRANSAÇÃO: Consolidar todas as queries do documento em uma única conexão
+             */
+            const updatedDoc = await db.$transaction(async (tx) => {
+              // Atualizar signatários existentes dentro da transação
+              const signerUpdates = clicksignSigners
+                .map((clicksignSigner) => {
+                  const existingSigner = doc.signers.find(
+                    (s) => s.clicksignSignerKey === clicksignSigner.id || 
+                           s.email.toLowerCase() === clicksignSigner.attributes.email.toLowerCase()
+                  );
 
-              const signerRequirements = requirementsBySignerId.get(clicksignSigner.id) || [];
-              const authRequirement = signerRequirements.find((r) => r.attributes.action === "provide_evidence");
-              const qualificationRequirement = signerRequirements.find((r) => r.attributes.action === "agree");
+                  if (!existingSigner) return null;
 
-              if (existingSigner) {
-                // Atualizar signatário existente
-                await db.signer.update({
-                  where: { id: existingSigner.id },
-                  data: {
-                    name: clicksignSigner.attributes.name,
-                    email: clicksignSigner.attributes.email,
-                    phoneNumber: clicksignSigner.attributes.phone_number || existingSigner.phoneNumber,
-                    status: clicksignSigner.attributes.status === "signed" ? "signed" : 
-                           clicksignSigner.attributes.status === "error" ? "error" : "pending",
-                    clicksignSignerKey: clicksignSigner.id,
-                    clicksignRequirementKey: authRequirement?.id || qualificationRequirement?.id || existingSigner.clicksignRequirementKey,
+                  const signerRequirements = requirementsBySignerId.get(clicksignSigner.id) || [];
+                  const authRequirement = signerRequirements.find((r) => r.attributes.action === "provide_evidence");
+                  const qualificationRequirement = signerRequirements.find((r) => r.attributes.action === "agree");
+
+                  return tx.signer.update({
+                    where: { id: existingSigner.id },
+                    data: {
+                      name: clicksignSigner.attributes.name,
+                      email: clicksignSigner.attributes.email,
+                      phoneNumber: clicksignSigner.attributes.phone_number || existingSigner.phoneNumber,
+                      status: clicksignSigner.attributes.status === "signed" ? "signed" : 
+                             clicksignSigner.attributes.status === "error" ? "error" : "pending",
+                      clicksignSignerKey: clicksignSigner.id,
+                      clicksignRequirementKey: authRequirement?.id || qualificationRequirement?.id || existingSigner.clicksignRequirementKey,
+                    },
+                  });
+                })
+                .filter((update): update is NonNullable<typeof update> => update !== null);
+
+              await Promise.all(signerUpdates);
+
+              await tx.document.update({
+                where: { id: doc.id },
+                data: updateData,
+              });
+
+              return tx.document.findUnique({
+                where: { id: doc.id },
+                include: {
+                  signers: {
+                    orderBy: { order: "asc" },
                   },
-                });
-              } else {
-                // Criar novo signatário se não existir (pode ter sido criado diretamente na Clicksign)
-                // Não criamos automaticamente para evitar duplicatas, apenas sincronizamos os existentes
-              }
-            }
-
-            // Atualizar documento no banco
-            await db.document.update({
-              where: { id: doc.id },
-              data: updateData,
+                },
+              });
             });
 
-            // Recarregar signatários atualizados do banco
-            const updatedSigners = await db.signer.findMany({
-              where: { documentId: doc.id },
-              orderBy: { order: "asc" },
-            });
-
-            // Atualizar objeto local
-            doc.status = mappedStatus;
-            if (updateData.signedAt) {
-              doc.signedAt = updateData.signedAt;
+            if (updatedDoc) {
+              doc.status = updatedDoc.status;
+              doc.signedAt = updatedDoc.signedAt;
+              doc.signers = updatedDoc.signers;
             }
-            doc.signers = updatedSigners;
           } catch (error) {
             console.error(`Erro ao sincronizar documento ${doc.id}:`, error);
-            // Continua com os dados do banco em caso de erro
           }
         }
 
@@ -181,13 +183,12 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Extrair documentos dos resultados (Promise.allSettled retorna {status, value})
+    // Extrair documentos dos resultados
     const finalDocuments = documentsWithSyncedStatus.map((result, index) => {
       if (result.status === "fulfilled") {
         return result.value;
       } else {
         console.error(`Erro ao processar documento ${documents[index]?.id}:`, result.reason);
-        // Retornar documento original em caso de erro
         const originalDoc = documents[index];
         return {
           id: originalDoc.id,

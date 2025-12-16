@@ -4,6 +4,7 @@ import { addSigner, verifyAllSignersHaveRequirements } from "@/lib/clicksign/ser
 import { requireAuth } from "@/lib/auth/utils";
 import { generateIdFromEntropySize } from "lucia";
 import { validateCPF, validateCNPJ } from "@/lib/utils";
+import { Prisma } from "@prisma/client";
 
 interface SignerData {
   certificateId?: string; // Opcional agora
@@ -185,10 +186,28 @@ export async function POST(
       );
     }
 
-    // Criar signatários na Clicksign e no banco
-    const createdSigners = [];
-    const errors = [];
+    /**
+     * CORREÇÃO CRÍTICA: Consolidar múltiplas queries em transação
+     * 
+     * PROBLEMA ORIGINAL:
+     * - Loop sequencial com db.signer.create para cada signatário
+     * - Depois: db.document.update + db.document.findUnique separados
+     * - Múltiplas conexões do pool para operações relacionadas
+     * 
+     * SOLUÇÃO:
+     * - Criar signatários na Clicksign primeiro (operações externas)
+     * - Consolidar todas as queries Prisma em uma única transação
+     */
+    const createdSigners: Prisma.SignerGetPayload<{}>[] = [];
+    const errors: Array<{ index: number; name: string; error: string }> = [];
+    const signerCreateData: Array<{
+      signerId: string;
+      cleanedDocument: string;
+      signerData: SignerData;
+      clicksignResult: Awaited<ReturnType<typeof addSigner>>;
+    }> = [];
 
+    // FASE 1: Criar signatários na Clicksign (operações externas, não bloqueiam pool)
     for (let i = 0; i < signers.length; i++) {
       const signerData = signers[i];
       console.log(`[DEBUG] Processando signatário ${i + 1}/${signers.length}:`, {
@@ -221,30 +240,15 @@ export async function POST(
         console.log(JSON.stringify({ data: result.authRequirement }, null, 2));
         console.log(`\n[DEBUG] ===== FIM DAS RESPOSTAS - SIGNATÁRIO ${i + 1} =====\n`);
 
-        // Salvar no banco de dados
+        // Preparar dados para criação no banco (será feito em transação)
         const signerId = generateIdFromEntropySize(10);
         const cleanedDocument = String(signerData.documentNumber).trim().replace(/\D/g, "");
-        const signer = await db.signer.create({
-          data: {
-            id: signerId,
-            name: signerData.name,
-            email: signerData.email,
-            documentNumber: cleanedDocument,
-            documentType: signerData.documentType,
-            phoneNumber: signerData.phoneNumber,
-            identification: signerData.identification,
-            signatureType: "electronic",
-            order: signerData.order,
-            status: "pending",
-            certificateId: signerData.certificateId || null,
-            clicksignSignerKey: result.signerId,
-            clicksignRequirementKey: result.qualificationRequirement?.id || null,
-            documentId: document.id,
-          },
+        signerCreateData.push({
+          signerId,
+          cleanedDocument,
+          signerData,
+          clicksignResult: result,
         });
-        console.log(`[DEBUG] ✓ Signatário ${i + 1} salvo no banco:`, { signerId: signer.id });
-
-        createdSigners.push(signer);
       } catch (error: any) {
         console.error(`[DEBUG] ✗ Erro ao criar signatário ${i + 1}:`, {
           message: error?.message,
@@ -281,7 +285,7 @@ export async function POST(
       console.warn("[DEBUG] Alguns signatários falharam:", errors);
       
       // Se nenhum signatário foi criado, retornar erro
-      if (createdSigners.length === 0) {
+      if (signerCreateData.length === 0) {
         console.error("[DEBUG] Nenhum signatário foi criado, todos falharam");
         return NextResponse.json(
           {
@@ -296,8 +300,74 @@ export async function POST(
           { status: 400 }
         );
       }
+    }
+
+    // FASE 2: Consolidar todas as queries Prisma em uma única transação
+    let updatedDocument;
+    if (signerCreateData.length > 0) {
+      console.log("[DEBUG] Criando signatários no banco em transação...");
       
-      // Se pelo menos um foi criado, retornar parcialmente criado
+      updatedDocument = await db.$transaction(async (tx) => {
+        // Criar todos os signatários dentro da transação
+        const signerCreates = signerCreateData.map((data) =>
+          tx.signer.create({
+            data: {
+              id: data.signerId,
+              name: data.signerData.name,
+              email: data.signerData.email,
+              documentNumber: data.cleanedDocument,
+              documentType: data.signerData.documentType,
+              phoneNumber: data.signerData.phoneNumber,
+              identification: data.signerData.identification,
+              signatureType: "electronic",
+              order: data.signerData.order,
+              status: "pending",
+              certificateId: data.signerData.certificateId || null,
+              clicksignSignerKey: data.clicksignResult.signerId,
+              clicksignRequirementKey: data.clicksignResult.qualificationRequirement?.id || null,
+              documentId: document.id,
+            },
+          })
+        );
+
+        const created = await Promise.all(signerCreates);
+        createdSigners.push(...created);
+
+        // Verificar que todos os signatários têm requisitos antes de atualizar status
+        console.log("[DEBUG] Verificando que todos os signatários têm requisitos...");
+        await verifyAllSignersHaveRequirements(
+          document.clicksignEnvelopeKey!,
+          created.length
+        );
+
+        // Atualizar status do documento dentro da mesma transação
+        console.log("[DEBUG] Atualizando status do documento para 'waiting_signers'...");
+        await tx.document.update({
+          where: { id },
+          data: {
+            status: "waiting_signers",
+          },
+        });
+
+        // Retornar documento completo com signatários atualizados
+        return tx.document.findUnique({
+          where: { id },
+          include: {
+            signers: {
+              orderBy: { order: "asc" },
+            },
+          },
+        });
+      });
+
+      console.log("[DEBUG] ✓ Transação concluída:", {
+        signersCreated: createdSigners.length,
+        documentStatus: updatedDocument?.status,
+      });
+    }
+
+    // Se houver erros mas alguns foram criados, retornar parcialmente criado
+    if (errors.length > 0 && createdSigners.length > 0) {
       return NextResponse.json(
         {
           success: true,
@@ -311,43 +381,17 @@ export async function POST(
       );
     }
 
-    // Verificar que todos os signatários têm requisitos antes de atualizar status
-    console.log("[DEBUG] Verificando que todos os signatários têm requisitos...");
-    await verifyAllSignersHaveRequirements(
-      document.clicksignEnvelopeKey!,
-      createdSigners.length
-    );
-
-    // Verificar que todos os signatários têm requisitos antes de atualizar status
-    if (createdSigners.length > 0) {
-      console.log("[DEBUG] Verificando que todos os signatários têm requisitos...");
-      await verifyAllSignersHaveRequirements(
-        document.clicksignEnvelopeKey!,
-        createdSigners.length
-      );
-    }
-
-    // Atualizar status do documento
-    console.log("[DEBUG] Atualizando status do documento para 'waiting_signers'...");
-    await db.document.update({
-      where: { id },
-      data: {
-        status: "waiting_signers",
-      },
-    });
-    console.log("[DEBUG] ✓ Status atualizado para 'waiting_signers'");
-
-    console.log("[DEBUG] Todos os signatários criados com sucesso:", createdSigners.length);
-    
-    // Buscar documento atualizado com signatários para confirmar
-    const updatedDocument = await db.document.findUnique({
-      where: { id },
-      include: {
-        signers: {
-          orderBy: { order: "asc" },
+    // Se não há erros ou todos falharam, buscar documento atualizado se necessário
+    if (!updatedDocument) {
+      updatedDocument = await db.document.findUnique({
+        where: { id },
+        include: {
+          signers: {
+            orderBy: { order: "asc" },
+          },
         },
-      },
-    });
+      });
+    }
 
     console.log("[DEBUG] Documento atualizado confirmado:", {
       id: updatedDocument?.id,
