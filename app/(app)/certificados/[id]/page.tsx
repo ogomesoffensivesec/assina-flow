@@ -13,7 +13,7 @@ import { useAuditStore } from "@/lib/stores/audit-store";
 import { useUser } from "@/lib/hooks/use-user";
 import { DateExpiresBadge } from "@/components/date-expires-badge";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate, getValidityStatus } from "@/lib/utils/date";
 import { ShieldCheck, Trash2, CheckCircle2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -157,7 +157,11 @@ export default function CertificateDetailPage({
             <div>
               <p className="text-xs text-muted-foreground">Status de Validade</p>
               <div className="mt-1">
-                <DateExpiresBadge validTo={new Date(certificate.validTo)} />
+                <DateExpiresBadge 
+                  validTo={new Date(certificate.validTo)} 
+                  certificateId={certificate.id}
+                  onClick={() => router.push("/certificados/novo")}
+                />
               </div>
             </div>
             <div>

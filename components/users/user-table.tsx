@@ -50,15 +50,16 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      <Table>
+      <div className="overflow-x-auto">
+        <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[180px]">Nome</TableHead>
-              <TableHead className="min-w-[200px]">Email</TableHead>
+              <TableHead className="min-w-[150px] sm:min-w-[180px]">Nome</TableHead>
+              <TableHead className="hidden md:table-cell min-w-[200px]">Email</TableHead>
               <TableHead className="min-w-[100px]">Role</TableHead>
-              <TableHead className="min-w-[120px]">Status</TableHead>
-              <TableHead className="min-w-[140px]">Data de Criação</TableHead>
-              <TableHead className="text-right min-w-[100px]">Ações</TableHead>
+              <TableHead className="hidden lg:table-cell min-w-[120px]">Status</TableHead>
+              <TableHead className="hidden xl:table-cell min-w-[140px]">Data de Criação</TableHead>
+              <TableHead className="min-w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -72,11 +73,16 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
           users.map((user) => (
             <TableRow key={user.id}>
               <TableCell className="font-medium">
-                <div className="max-w-[180px] truncate" title={getUserName(user)}>
-                  {getUserName(user)}
+                <div className="space-y-1">
+                  <div className="max-w-[150px] sm:max-w-[180px] truncate" title={getUserName(user)}>
+                    {getUserName(user)}
+                  </div>
+                  <div className="text-xs text-muted-foreground md:hidden truncate max-w-[150px]" title={getUserEmail(user)}>
+                    {getUserEmail(user)}
+                  </div>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell">
                 <div className="max-w-[200px] truncate" title={getUserEmail(user)}>
                   {getUserEmail(user)}
                 </div>
@@ -84,33 +90,36 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
               <TableCell>
                 <UserRoleBadge role={getUserRole(user)} />
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden lg:table-cell">
                 <Badge variant="default">
                   {user.emailVerified ? "Verificado" : "Não verificado"}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden xl:table-cell">
                 {formatDate(new Date(user.createdAt))}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
+              <TableCell>
+                <div className="flex items-center justify-end gap-1 sm:gap-2">
                   {onEdit && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onEdit(user)}
+                      className="h-7 sm:h-8 text-xs px-2 sm:px-3"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Editar</span>
                     </Button>
                   )}
                   {onDelete && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onDelete(user.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="h-7 sm:h-8 text-xs px-2 sm:px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Excluir</span>
                     </Button>
                   )}
                 </div>
@@ -120,6 +129,7 @@ export function UserTable({ users, onEdit, onDelete }: UserTableProps) {
         )}
           </TableBody>
         </Table>
+      </div>
     </div>
   );
 }

@@ -5,9 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Certificate } from "@/lib/stores/certificate-store";
 import { DateExpiresBadge } from "@/components/date-expires-badge";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate, getValidityStatus } from "@/lib/utils/date";
 import { Eye, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface CertificateCardProps {
   certificate: Certificate;
@@ -20,8 +22,22 @@ export function CertificateCard({
   onView,
   onDelete,
 }: CertificateCardProps) {
+  const router = useRouter();
+  const validityStatus = getValidityStatus(new Date(certificate.validTo));
+  const isExpiredOrExpiring = validityStatus === "expired" || validityStatus === "expiring_soon";
+
+  const handleReplaceCertificate = () => {
+    router.push("/certificados/novo");
+  };
+
   return (
-    <Card>
+    <Card 
+      className={cn(
+        isExpiredOrExpiring && "cursor-pointer hover:border-primary/50 transition-all",
+        isExpiredOrExpiring && "hover:shadow-md"
+      )}
+      onClick={() => isExpiredOrExpiring && handleReplaceCertificate()}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -30,7 +46,13 @@ export function CertificateCard({
               {certificate.type === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
             </CardDescription>
           </div>
-          <DateExpiresBadge validTo={new Date(certificate.validTo)} />
+          <div onClick={(e) => e.stopPropagation()}>
+            <DateExpiresBadge 
+              validTo={new Date(certificate.validTo)} 
+              certificateId={certificate.id}
+              onClick={handleReplaceCertificate}
+            />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -53,7 +75,7 @@ export function CertificateCard({
               {certificate.status === "active" ? "Ativo" : "Inativo"}
             </Badge>
           </div>
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
             {onView && (
               <Button
                 variant="outline"

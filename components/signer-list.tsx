@@ -53,18 +53,19 @@ export function SignerList({
   const sortedSigners = [...signers].sort((a, b) => a.order - b.order);
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-12">Ordem</TableHead>
-          <TableHead>Nome</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>{signers[0]?.documentType === "PF" ? "CPF" : "CNPJ"}</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>Status</TableHead>
-          {showActions && <TableHead className="text-right">Ações</TableHead>}
-        </TableRow>
-      </TableHeader>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12">Ordem</TableHead>
+            <TableHead className="min-w-[150px]">Nome</TableHead>
+            <TableHead className="hidden md:table-cell min-w-[200px]">Email</TableHead>
+            <TableHead className="min-w-[120px]">{signers[0]?.documentType === "PF" ? "CPF" : "CNPJ"}</TableHead>
+            <TableHead className="hidden lg:table-cell min-w-[150px]">Tipo</TableHead>
+            <TableHead className="min-w-[120px]">Status</TableHead>
+            {showActions && <TableHead className="min-w-[100px]">Ações</TableHead>}
+          </TableRow>
+        </TableHeader>
       <TableBody>
         {sortedSigners.length === 0 ? (
           <TableRow>
@@ -81,49 +82,59 @@ export function SignerList({
               <TableCell>
                 <Badge variant="outline">{signer.order}</Badge>
               </TableCell>
-              <TableCell className="font-medium">{signer.name}</TableCell>
-              <TableCell>{signer.email}</TableCell>
+              <TableCell className="font-medium">
+                <div className="space-y-1">
+                  <div>{signer.name}</div>
+                  <div className="text-xs text-muted-foreground md:hidden">{signer.email}</div>
+                </div>
+              </TableCell>
+              <TableCell className="hidden md:table-cell">{signer.email}</TableCell>
               <TableCell>
                 {signer.documentType === "PF" 
                   ? formatCPF(signer.documentNumber) 
                   : formatCNPJ(signer.documentNumber)}
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden lg:table-cell">
                 {signer.signatureType === "digital_a1"
                   ? "Assinatura Digital A1"
                   : "Assinatura Eletrônica"}
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(signer.status)}
-                  <span className="text-sm">{getStatusLabel(signer.status)}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {getStatusIcon(signer.status)}
+                    <span className="text-xs sm:text-sm">{getStatusLabel(signer.status)}</span>
+                  </div>
                   {signer.signedAt && (
                     <span className="text-xs text-muted-foreground">
-                      ({formatDateTime(typeof signer.signedAt === "string" ? new Date(signer.signedAt) : signer.signedAt)})
+                      {formatDateTime(typeof signer.signedAt === "string" ? new Date(signer.signedAt) : signer.signedAt)}
                     </span>
                   )}
                 </div>
               </TableCell>
               {showActions && (
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1 sm:gap-2">
                     {onEdit && (
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
                         onClick={() => onEdit(signer)}
+                        className="h-7 sm:h-8 text-xs px-2 sm:px-3"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline">Editar</span>
                       </Button>
                     )}
                     {onDelete && (
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
                         onClick={() => onDelete(signer.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="h-7 sm:h-8 text-xs px-2 sm:px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                        <span className="hidden sm:inline">Excluir</span>
                       </Button>
                     )}
                   </div>
@@ -134,6 +145,7 @@ export function SignerList({
         )}
       </TableBody>
     </Table>
+    </div>
   );
 }
 

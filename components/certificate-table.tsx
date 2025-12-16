@@ -12,9 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Certificate } from "@/lib/stores/certificate-store";
 import { DateExpiresBadge } from "@/components/date-expires-badge";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate, getValidityStatus } from "@/lib/utils/date";
+import { formatDocument } from "@/lib/utils";
 import { Eye, Trash2, Download, Key } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface CertificateTableProps {
   certificates: Certificate[];
@@ -31,45 +34,73 @@ export function CertificateTable({
   onDownload,
   onViewPassword,
 }: CertificateTableProps) {
+  const router = useRouter();
+
+  const handleReplaceCertificate = (certificateId: string) => {
+    router.push("/certificados/novo");
+  };
+
   return (
     <div className="border rounded-lg overflow-hidden">
-      <Table>
+      <div className="overflow-x-auto">
+        <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[200px]">Nome</TableHead>
-              <TableHead className="min-w-[120px]">Tipo</TableHead>
-              <TableHead className="min-w-[150px]">CNPJ/CPF</TableHead>
-              <TableHead className="min-w-[220px]">Validade</TableHead>
-              <TableHead className="min-w-[100px]">Status</TableHead>
-              <TableHead className="text-right min-w-[100px]">Ações</TableHead>
+              <TableHead className="w-[160px] min-w-[160px]">RESPONSÁVEL CERTIFICADO</TableHead>
+              <TableHead className="hidden sm:table-cell min-w-[120px]">Tipo</TableHead>
+              <TableHead className="hidden md:table-cell min-w-[150px]">CNPJ/CPF</TableHead>
+              <TableHead className="min-w-[180px] sm:min-w-[220px]">Validade</TableHead>
+              <TableHead className="hidden lg:table-cell min-w-[100px]">Status</TableHead>
+              <TableHead className="text-right w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
         {certificates.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground">
+            <TableCell colSpan={6} className="text-center text-muted-foreground py-8 px-4">
               Nenhum certificado cadastrado
             </TableCell>
           </TableRow>
         ) : (
-          certificates.map((certificate) => (
-            <TableRow key={certificate.id}>
-              <TableCell className="font-medium">
-                {certificate.name}
-              </TableCell>
-              <TableCell>
-                {certificate.type === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
-              </TableCell>
-              <TableCell>{certificate.cpfCnpj}</TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <div className="text-sm">
-                    {formatDate(new Date(certificate.validFrom))} - {formatDate(new Date(certificate.validTo))}
+          certificates.map((certificate) => {
+            const validityStatus = getValidityStatus(new Date(certificate.validTo));
+            const isExpiredOrExpiring = validityStatus === "expired" || validityStatus === "expiring_soon";
+            
+            return (
+              <TableRow 
+                key={certificate.id}
+                className={cn(
+                  isExpiredOrExpiring && "cursor-pointer hover:bg-accent/50",
+                  isExpiredOrExpiring && "transition-colors"
+                )}
+                onClick={() => isExpiredOrExpiring && handleReplaceCertificate(certificate.id)}
+              >
+                <TableCell className="font-medium w-[160px]">
+                  <div className="space-y-1">
+                    <div className="truncate" title={certificate.name}>{certificate.name}</div>
+                    <div className="text-xs text-muted-foreground sm:hidden truncate">
+                      {certificate.type === "PF" ? "PF" : "PJ"} • {formatDocument(certificate.cpfCnpj, certificate.type)}
+                    </div>
                   </div>
-                  <DateExpiresBadge validTo={new Date(certificate.validTo)} />
-                </div>
-              </TableCell>
-              <TableCell>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {certificate.type === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">{formatDocument(certificate.cpfCnpj, certificate.type)}</TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="text-xs sm:text-sm">
+                      <span className="hidden sm:inline">{formatDate(new Date(certificate.validFrom))} - </span>
+                      {formatDate(new Date(certificate.validTo))}
+                    </div>
+                    <DateExpiresBadge 
+                      validTo={new Date(certificate.validTo)} 
+                      certificateId={certificate.id}
+                      onClick={() => handleReplaceCertificate(certificate.id)}
+                    />
+                  </div>
+                </TableCell>
+              <TableCell className="hidden lg:table-cell">
                 <Badge
                   variant={certificate.status === "active" ? "default" : "secondary"}
                 >
@@ -77,56 +108,69 @@ export function CertificateTable({
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex flex-col items-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {onView && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="h-8 text-xs w-full sm:w-auto min-w-[90px]"
+                    >
+                      <Link href={`/certificados/${certificate.id}`} className="flex items-center justify-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Ver</span>
+                      </Link>
+                    </Button>
+                  )}
                   {onViewPassword && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onViewPassword(certificate.id)}
-                      title={certificate.hasPassword ? "Ver senha salva" : "Sem senha salva"}
-                      className={certificate.hasPassword ? "" : "opacity-50"}
+                      className={cn(
+                        "h-8 text-xs w-full sm:w-auto min-w-[90px]",
+                        !certificate.hasPassword && "opacity-50"
+                      )}
+                      disabled={!certificate.hasPassword}
                     >
-                      <Key className={`h-4 w-4 ${certificate.hasPassword ? "text-primary" : ""}`} />
+                      <Key className={cn(
+                        "h-3.5 w-3.5 mr-1.5",
+                        certificate.hasPassword && "text-primary"
+                      )} />
+                      <span>Senha</span>
                     </Button>
                   )}
                   {onDownload && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onDownload(certificate.id)}
-                      title="Baixar certificado"
+                      className="h-8 text-xs w-full sm:w-auto min-w-[90px]"
                     >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onView && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                    >
-                      <Link href={`/certificados/${certificate.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      <span>Baixar</span>
                     </Button>
                   )}
                   {onDelete && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onDelete(certificate.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="h-8 text-xs w-full sm:w-auto min-w-[90px] text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      <span>Excluir</span>
                     </Button>
                   )}
                 </div>
               </TableCell>
             </TableRow>
-          )          )
+            );
+          })
         )}
           </TableBody>
         </Table>
+      </div>
     </div>
   );
 }

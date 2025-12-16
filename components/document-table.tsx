@@ -74,12 +74,14 @@ export function DocumentTable({
       buttons.push(
         <Button
           key="view"
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           asChild
+          className="h-7 sm:h-8 text-xs px-2 sm:px-3"
         >
-          <Link href={`/documentos/${document.id}`}>
-            <Eye className="h-4 w-4" />
+          <Link href={`/documentos/${document.id}`} className="flex items-center gap-1 sm:gap-1.5">
+            <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden sm:inline">Ver</span>
           </Link>
         </Button>
       );
@@ -89,12 +91,13 @@ export function DocumentTable({
       buttons.push(
         <Button
           key="configure"
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={() => onConfigure(document.id)}
-          title="Configurar signatários"
+          className="h-7 sm:h-8 text-xs px-2 sm:px-3"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Configurar</span>
         </Button>
       );
     }
@@ -103,12 +106,13 @@ export function DocumentTable({
       buttons.push(
         <Button
           key="sign"
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={() => onSign(document.id)}
-          title="Assinar documento"
+          className="h-7 sm:h-8 text-xs px-2 sm:px-3"
         >
-          <FileSignature className="h-4 w-4" />
+          <FileSignature className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Assinar</span>
         </Button>
       );
     }
@@ -117,12 +121,13 @@ export function DocumentTable({
       buttons.push(
         <Button
           key="download"
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={() => onDownload(document.id)}
-          title="Baixar documento assinado"
+          className="h-7 sm:h-8 text-xs px-2 sm:px-3"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Baixar</span>
         </Button>
       );
     }
@@ -131,13 +136,13 @@ export function DocumentTable({
       buttons.push(
         <Button
           key="delete"
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={() => onDelete(document.id)}
-          className="text-destructive hover:text-destructive"
-          title="Excluir documento"
+          className="h-7 sm:h-8 text-xs px-2 sm:px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Excluir</span>
         </Button>
       );
     }
@@ -164,26 +169,27 @@ export function DocumentTable({
       )}
       
       <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {showSelection && onDeleteMultiple && (
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Selecionar todos"
-                  />
-                </TableHead>
-              )}
-              <TableHead className="min-w-[250px]">Nome do Documento</TableHead>
-              <TableHead className="min-w-[80px]">Páginas</TableHead>
-              <TableHead className="min-w-[150px]">Signatários</TableHead>
-              <TableHead className="min-w-[140px]">Status</TableHead>
-              <TableHead className="min-w-[140px]">Data de Upload</TableHead>
-              <TableHead className="text-right min-w-[120px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {showSelection && onDeleteMultiple && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </TableHead>
+                )}
+                <TableHead className="min-w-[200px] sm:min-w-[250px]">Nome do Documento</TableHead>
+                <TableHead className="hidden sm:table-cell min-w-[80px]">Páginas</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[150px]">Signatários</TableHead>
+                <TableHead className="min-w-[100px] sm:min-w-[140px]">Status</TableHead>
+                <TableHead className="hidden lg:table-cell min-w-[140px]">Data de Upload</TableHead>
+                <TableHead className="min-w-[100px] sm:min-w-[120px]">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
         {documents.length === 0 ? (
           <TableRow>
@@ -207,12 +213,17 @@ export function DocumentTable({
                 </TableCell>
               )}
               <TableCell className="font-medium">
-                <div className="max-w-[250px] truncate" title={document.name}>
-                  {document.name}
+                <div className="space-y-1">
+                  <div className="max-w-[200px] sm:max-w-[250px] truncate" title={document.name}>
+                    {document.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground sm:hidden">
+                    {document.pageCount} páginas • {document.signers.length} signatário(s)
+                  </div>
                 </div>
               </TableCell>
-              <TableCell>{document.pageCount}</TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">{document.pageCount}</TableCell>
+              <TableCell className="hidden md:table-cell">
                 <div className="space-y-1">
                   <div className="text-sm">{document.signers.length} signatário(s)</div>
                   {document.signers.length > 0 && (
@@ -226,9 +237,11 @@ export function DocumentTable({
               <TableCell>
                 <DocumentStatusBadge status={document.status} />
               </TableCell>
-              <TableCell>{formatDate(document.uploadedAt instanceof Date ? document.uploadedAt : new Date(document.uploadedAt))}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
+              <TableCell className="hidden lg:table-cell">
+                {formatDate(document.uploadedAt instanceof Date ? document.uploadedAt : new Date(document.uploadedAt))}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-end gap-1 sm:gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
                   {getActionButtons(document)}
                 </div>
               </TableCell>
@@ -237,6 +250,7 @@ export function DocumentTable({
         )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );

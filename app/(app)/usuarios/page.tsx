@@ -104,17 +104,18 @@ export default function UsersPage() {
         title="Usuários"
         description="Gerencie os usuários do sistema"
         actions={
-          <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link href="/usuarios/novo">
+          <Button asChild size="sm" className="w-full sm:w-auto bg-primary hover:bg-primary/90">
+            <Link href="/usuarios/novo" className="flex items-center justify-center">
               <Plus className="mr-2 h-4 w-4" />
-              Novo Usuário
+              <span className="hidden sm:inline">Novo Usuário</span>
+              <span className="sm:hidden">Novo</span>
             </Link>
           </Button>
         }
       />
 
       {/* Filtros */}
-      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -129,10 +130,10 @@ export default function UsersPage() {
             className="pl-10"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="role-filter">Role:</Label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <Label htmlFor="role-filter" className="text-sm">Role:</Label>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger id="role-filter" className="w-[150px]">
+            <SelectTrigger id="role-filter" className="w-full sm:w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -142,7 +143,7 @@ export default function UsersPage() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={fetchUsers} variant="outline">
+        <Button onClick={fetchUsers} variant="outline" size="sm" className="w-full sm:w-auto">
           Buscar
         </Button>
       </div>

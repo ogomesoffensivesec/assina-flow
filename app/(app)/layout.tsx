@@ -1,5 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { AppHeader } from "@/components/app-header";
+import { AppTopbar } from "@/components/app-topbar";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function AppLayout({
@@ -8,14 +7,13 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden ">
-      <AppSidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <AppHeader />
-        <main className="flex-1 overflow-y-auto bg-background p-6" >
+    <div className="flex min-h-screen flex-col">
+      <AppTopbar />
+      <main className="flex-1 bg-background">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
       <Toaster />
     </div>
   );

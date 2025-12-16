@@ -42,8 +42,8 @@ export function DocumentsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[80vw] w-[80vw] h-[90vh] flex flex-col p-0" style={{ maxWidth: '80vw', width: '80vw' }}>
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-[95vw] sm:max-w-[90vw] md:max-w-[80vw] w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 mx-2 sm:mx-4">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             Detalhes dos Documentos
@@ -53,9 +53,9 @@ export function DocumentsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
           {/* Resumo por Status */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
@@ -95,20 +95,21 @@ export function DocumentsDialog({
 
           {/* Tabela de Documentos */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Lista Completa</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Lista Completa</h3>
             <div className="border rounded-lg overflow-hidden">
-              <div className="max-h-[50vh] overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead className="min-w-[250px]">Nome do Documento</TableHead>
-                      <TableHead className="min-w-[80px]">Páginas</TableHead>
-                      <TableHead className="min-w-[150px]">Signatários</TableHead>
-                      <TableHead className="min-w-[140px]">Status</TableHead>
-                      <TableHead className="min-w-[140px]">Data de Upload</TableHead>
-                      <TableHead className="min-w-[100px]">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
+              <div className="max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow>
+                        <TableHead className="min-w-[200px] sm:min-w-[250px]">Nome do Documento</TableHead>
+                        <TableHead className="hidden sm:table-cell min-w-[80px]">Páginas</TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[150px]">Signatários</TableHead>
+                        <TableHead className="min-w-[100px] sm:min-w-[140px]">Status</TableHead>
+                        <TableHead className="hidden lg:table-cell min-w-[140px]">Data de Upload</TableHead>
+                        <TableHead className="min-w-[80px] sm:min-w-[100px]">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                 {documents.length === 0 ? (
                   <TableRow>
@@ -119,9 +120,18 @@ export function DocumentsDialog({
                 ) : (
                   documents.map((doc) => (
                     <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.name}</TableCell>
-                      <TableCell>{doc.pageCount}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-medium">
+                        <div className="space-y-1">
+                          <div className="max-w-[200px] sm:max-w-[250px] truncate" title={doc.name}>
+                            {doc.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground sm:hidden">
+                            {doc.pageCount} páginas • {doc.signers.length} signatário(s)
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">{doc.pageCount}</TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="text-sm">
                           {doc.signers.length} signatário(s)
                         </div>
@@ -129,10 +139,15 @@ export function DocumentsDialog({
                       <TableCell>
                         <DocumentStatusBadge status={doc.status} />
                       </TableCell>
-                      <TableCell>{formatDate(new Date(doc.uploadedAt))}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {formatDate(new Date(doc.uploadedAt))}
+                      </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/documentos/${doc.id}`}>Ver</Link>
+                        <Button variant="outline" size="sm" asChild className="h-7 sm:h-8 text-xs px-2 sm:px-3">
+                          <Link href={`/documentos/${doc.id}`}>
+                            <span className="hidden sm:inline">Ver</span>
+                            <span className="sm:hidden">→</span>
+                          </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -140,6 +155,7 @@ export function DocumentsDialog({
                 )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
           </div>

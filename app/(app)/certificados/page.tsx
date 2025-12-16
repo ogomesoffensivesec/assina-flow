@@ -153,17 +153,19 @@ export default function CertificatesPage() {
         title="Certificados"
         description="Gerencie seus certificados digitais A1"
         actions={
-          <div className="flex gap-2">
-            <Button asChild variant="outline">
-              <Link href="/certificados/em-massa">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+              <Link href="/certificados/em-massa" className="flex items-center justify-center">
                 <Upload className="mr-2 h-4 w-4" />
-                Upload em Massa
+                <span className="hidden sm:inline">Upload em Massa</span>
+                <span className="sm:hidden">Em Massa</span>
               </Link>
             </Button>
-            <Button asChild>
-              <Link href="/certificados/novo">
+            <Button asChild size="sm" className="w-full sm:w-auto">
+              <Link href="/certificados/novo" className="flex items-center justify-center">
                 <Plus className="mr-2 h-4 w-4" />
-                Adicionar Certificado A1
+                <span className="hidden sm:inline">Adicionar Certificado A1</span>
+                <span className="sm:hidden">Adicionar</span>
               </Link>
             </Button>
           </div>
@@ -171,8 +173,8 @@ export default function CertificatesPage() {
       />
 
       {/* Filtros de busca */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {/* Campo de busca */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

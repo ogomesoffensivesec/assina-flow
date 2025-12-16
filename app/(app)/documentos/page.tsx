@@ -168,26 +168,27 @@ export default function DocumentsPage() {
         title="Documentos"
         description="Gerencie seus documentos e assinaturas digitais"
         actions={
-          <Button asChild>
-            <Link href="/documentos/novo">
+          <Button asChild size="sm" className="w-full sm:w-auto">
+            <Link href="/documentos/novo" className="flex items-center justify-center">
               <Plus className="mr-2 h-4 w-4" />
-              Novo Documento
+              <span className="hidden sm:inline">Novo Documento</span>
+              <span className="sm:hidden">Novo</span>
             </Link>
           </Button>
         }
       />
 
       {/* Filtros */}
-      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="status-filter">Status:</Label>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <Label htmlFor="status-filter" className="text-sm">Status:</Label>
           <Select
             value={statusFilter}
             onValueChange={(value) =>
               setStatusFilter(value as DocumentStatus | "all")
             }
           >
-            <SelectTrigger id="status-filter" className="w-[200px]">
+            <SelectTrigger id="status-filter" className="w-full sm:w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

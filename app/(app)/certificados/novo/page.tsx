@@ -60,7 +60,6 @@ export default function NewCertificatePage() {
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
-    // Mock: Simular hash do arquivo
     console.log("Arquivo selecionado:", selectedFile.name);
   };
 
@@ -155,7 +154,7 @@ export default function NewCertificatePage() {
               />
               {file && (
                 <p className="text-xs text-muted-foreground">
-                  Hash: a1b2c3d4e5f6... (mock)
+                  Arquivo selecionado: {file.name}
                 </p>
               )}
             </div>

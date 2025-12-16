@@ -35,28 +35,7 @@ interface AuditStore {
 }
 
 export const useAuditStore = create<AuditStore>((set, get) => ({
-  logs: [
-    // Mock data inicial
-    {
-      id: "1",
-      timestamp: new Date("2024-12-01T10:00:00"),
-      userId: "user1",
-      userName: "Admin",
-      action: "upload",
-      ip: "192.168.1.1",
-      documentId: "1",
-      documentName: "Contrato de Prestação de Serviços",
-    },
-    {
-      id: "2",
-      timestamp: new Date("2024-12-01T11:00:00"),
-      userId: "user1",
-      userName: "Admin",
-      action: "certificate_add",
-      ip: "192.168.1.1",
-      details: "Certificado Empresa ABC adicionado",
-    },
-  ],
+  logs: [],
   addLog: (log) => {
     const newLog: AuditLog = {
       ...log,
