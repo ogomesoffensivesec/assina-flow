@@ -37,7 +37,27 @@ export function CertificateTable({
   const router = useRouter();
 
   const handleReplaceCertificate = (certificateId: string) => {
-    router.push("/certificados/novo");
+    if (typeof window === 'undefined') {
+      return; // Não fazer nada no SSR
+    }
+
+    const targetPath = "/certificados/novo";
+    const currentPath = window.location.pathname;
+
+    try {
+      router.push(targetPath);
+      
+      // Fallback: se o router não funcionar em 500ms, usar window.location
+      // Este é um padrão comum em produção onde router.push pode falhar silenciosamente
+      setTimeout(() => {
+        if (window.location.pathname === currentPath) {
+          window.location.href = targetPath;
+        }
+      }, 500);
+    } catch (error) {
+      // Fallback imediato para window.location em caso de erro
+      window.location.href = targetPath;
+    }
   };
 
   return (
@@ -63,7 +83,17 @@ export function CertificateTable({
           </TableRow>
         ) : (
           certificates.map((certificate) => {
-            const validityStatus = getValidityStatus(new Date(certificate.validTo));
+            let validToDate: Date;
+            try {
+              validToDate = new Date(certificate.validTo);
+              if (isNaN(validToDate.getTime())) {
+                throw new Error(`Invalid date: ${certificate.validTo}`);
+              }
+            } catch (error: any) {
+              validToDate = new Date(); // Fallback para data atual
+            }
+            
+            const validityStatus = getValidityStatus(validToDate);
             const isExpiredOrExpiring = validityStatus === "expired" || validityStatus === "expiring_soon";
             
             return (
@@ -73,7 +103,11 @@ export function CertificateTable({
                   isExpiredOrExpiring && "cursor-pointer hover:bg-accent/50",
                   isExpiredOrExpiring && "transition-colors"
                 )}
-                onClick={() => isExpiredOrExpiring && handleReplaceCertificate(certificate.id)}
+                onClick={() => {
+                  if (isExpiredOrExpiring) {
+                    handleReplaceCertificate(certificate.id);
+                  }
+                }}
               >
                 <TableCell className="font-medium w-[160px]">
                   <div className="space-y-1">

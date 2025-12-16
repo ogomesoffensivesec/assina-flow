@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
               document.clicksignEnvelopeKey,
               document.clicksignDocumentKey
             );
-            console.log(`[DEBUG] Documento ${document.id} deletado na Clicksign`);
 
             // Verificar se há outros documentos no mesmo envelope (incluindo os que estão sendo deletados)
             const documentsInSameEnvelope = envelopeToDocuments.get(document.clicksignEnvelopeKey) || [];
@@ -89,16 +88,11 @@ export async function POST(request: NextRequest) {
             if (shouldDeleteEnvelope) {
               try {
                 await clicksignClient.deleteEnvelope(document.clicksignEnvelopeKey);
-                console.log(`[DEBUG] Envelope ${document.clicksignEnvelopeKey} deletado na Clicksign`);
               } catch (error: any) {
                 // Se falhar ao deletar envelope, continua
-                console.warn(`[DEBUG] Erro ao deletar envelope:`, error.message);
               }
-            } else {
-              console.log(`[DEBUG] Envelope mantido (há outros documentos no envelope)`);
             }
           } catch (error: any) {
-            console.error(`[DEBUG] Erro ao deletar documento ${document.id} na Clicksign:`, error);
             // Continua com a exclusão local mesmo se falhar na Clicksign
           }
         }
@@ -110,7 +104,6 @@ export async function POST(request: NextRequest) {
 
         results.success.push(document.id);
       } catch (error: any) {
-        console.error(`[DEBUG] Erro ao deletar documento ${document.id}:`, error);
         results.failed.push({
           id: document.id,
           error: error.message || "Erro desconhecido",

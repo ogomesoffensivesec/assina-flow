@@ -234,7 +234,6 @@ export async function DELETE(
           document.clicksignEnvelopeKey,
           document.clicksignDocumentKey
         );
-        console.log("[DEBUG] Documento deletado na Clicksign");
 
         // Verificar se há outros documentos no mesmo envelope antes de deletar o envelope
         const otherDocumentsInEnvelope = await db.document.findFirst({
@@ -248,16 +247,11 @@ export async function DELETE(
         if (!otherDocumentsInEnvelope) {
           try {
             await clicksignClient.deleteEnvelope(document.clicksignEnvelopeKey);
-            console.log("[DEBUG] Envelope deletado na Clicksign");
           } catch (error: any) {
             // Se falhar ao deletar envelope, continua
-            console.warn("[DEBUG] Erro ao deletar envelope:", error.message);
           }
-        } else {
-          console.log("[DEBUG] Envelope mantido (há outros documentos no envelope)");
         }
       } catch (error: any) {
-        console.error("[DEBUG] Erro ao deletar na Clicksign:", error);
         // Continua com a exclusão local mesmo se falhar na Clicksign
       }
     }

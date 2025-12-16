@@ -39,7 +39,26 @@ export function DateExpiresBadge({
       if (onClick) {
         onClick();
       } else {
-        router.push("/certificados/novo");
+        if (typeof window === 'undefined') {
+          return; // Não fazer nada no SSR
+        }
+
+        const targetPath = "/certificados/novo";
+        const currentPath = window.location.pathname;
+
+        try {
+          router.push(targetPath);
+          
+          // Fallback: se o router não funcionar em 500ms, usar window.location
+          setTimeout(() => {
+            if (window.location.pathname === currentPath) {
+              window.location.href = targetPath;
+            }
+          }, 500);
+        } catch (error) {
+          // Fallback imediato para window.location em caso de erro
+          window.location.href = targetPath;
+        }
       }
     }
   };

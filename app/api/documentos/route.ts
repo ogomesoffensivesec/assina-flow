@@ -126,7 +126,6 @@ export async function GET(request: NextRequest) {
               } else {
                 // Criar novo signatário se não existir (pode ter sido criado diretamente na Clicksign)
                 // Não criamos automaticamente para evitar duplicatas, apenas sincronizamos os existentes
-                console.log(`[DEBUG] Signatário ${clicksignSigner.attributes.email} encontrado na Clicksign mas não no banco local`);
               }
             }
 
@@ -235,21 +234,12 @@ export async function GET(request: NextRequest) {
  * Upload de PDF e criação de envelope na Clicksign
  */
 export async function POST(request: NextRequest) {
-  console.log("[DEBUG] Iniciando criação de documento...");
   try {
     const { user } = await requireAuth();
-    console.log("[DEBUG] Usuário autenticado:", { userId: user.id, email: user.email });
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const name = formData.get("name") as string;
-
-    console.log("[DEBUG] Dados recebidos:", {
-      fileName: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      name,
-    });
 
     if (!file) {
       console.error("[DEBUG] Arquivo não fornecido");

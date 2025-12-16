@@ -14,17 +14,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log("[DEBUG] Iniciando processo de assinatura...");
   try {
     const { user } = await requireAuth();
     const { id } = await params;
-    console.log("[DEBUG] Usuário autenticado:", { userId: user.id, email: user.email, role: user.role });
-    console.log("[DEBUG] Documento ID:", id);
 
     // Ler body com motivo e local (certificados já estão vinculados aos signatários)
     const body = await request.json();
     const { reason, location } = body;
-    console.log("[DEBUG] Dados recebidos:", { hasReason: !!reason, hasLocation: !!location });
 
     if (!reason || !location) {
       return NextResponse.json(
@@ -39,7 +35,6 @@ export async function POST(
     });
 
     if (!document) {
-      console.error("[DEBUG] Documento não encontrado:", id);
       return NextResponse.json(
         { error: "Documento não encontrado" },
         { status: 404 }
