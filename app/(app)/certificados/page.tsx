@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CertificateTable } from "@/components/certificate-table";
 import { EmptyState } from "@/components/empty-state";
-import { useCertificateStore, Certificate, CertificateType, CertificateStatus } from "@/lib/stores/certificate-store";
+import { useCertificateStore } from "@/lib/stores/certificate-store";
 import { useAuditStore } from "@/lib/stores/audit-store";
 import { useUser } from "@/lib/hooks/use-user";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";

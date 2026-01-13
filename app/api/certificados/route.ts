@@ -15,16 +15,13 @@ export const revalidate = 0;
 
 /**
  * GET /api/certificados
- * Lista todos os certificados do usuário
+ * Lista todos os certificados
  */
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await requireAuth();
+    await requireAuth(); // Ainda requer autenticação, mas retorna todos os certificados
 
     const certificates = await db.certificate.findMany({
-      where: {
-        userId: user.id,
-      },
       orderBy: {
         validTo: "asc", // Ordenar por data de validade: do mais perto de vencer para o mais distante
       },
